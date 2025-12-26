@@ -20,6 +20,20 @@ func NewCustomerHandler(svc *service.CustomerService) *CustomerHandler {
 	}
 }
 
+// RegisterRoutes 注册路由
+func (h *CustomerHandler) RegisterRoutes(server *gin.Engine) {
+	group := server.Group("/api/customers")
+	group.GET("", h.GetList)
+	group.GET("/:id", h.GetById)
+	group.POST("", h.Create)
+	group.PUT("/:id", h.Update)
+	group.PUT("/:id/health-manager", h.SetHealthManager)
+	group.PUT("/:id/bed", h.SetBed)
+	group.PUT("/:id/diet-plan", h.SetDietPlan)
+	group.PUT("/:id/care-level", h.SetCareLevel)
+	group.DELETE("/:id", h.Delete)
+}
+
 // Create 创建客户
 func (h *CustomerHandler) Create(c *gin.Context) {
 	var req domain.Customer
@@ -367,18 +381,3 @@ func (h *CustomerHandler) Delete(c *gin.Context) {
 		"success": true,
 	})
 }
-
-// RegisterRoutes 注册路由
-func (h *CustomerHandler) RegisterRoutes(server *gin.Engine) {
-	group := server.Group("/api/customers")
-	group.GET("", h.GetList)
-	group.GET("/:id", h.GetById)
-	group.POST("", h.Create)
-	group.PUT("/:id", h.Update)
-	group.PUT("/:id/health-manager", h.SetHealthManager)
-	group.PUT("/:id/bed", h.SetBed)
-	group.PUT("/:id/diet-plan", h.SetDietPlan)
-	group.PUT("/:id/care-level", h.SetCareLevel)
-	group.DELETE("/:id", h.Delete)
-}
-

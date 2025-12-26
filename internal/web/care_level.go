@@ -20,6 +20,16 @@ func NewCareLevelHandler(svc *service.CareLevelService) *CareLevelHandler {
 	}
 }
 
+// RegisterRoutes 注册路由
+func (h *CareLevelHandler) RegisterRoutes(server *gin.Engine) {
+	group := server.Group("/api/care-levels")
+	group.GET("", h.GetList)
+	group.GET("/:id", h.GetById)
+	group.POST("", h.Create)
+	group.PUT("/:id", h.Update)
+	group.DELETE("/:id", h.Delete)
+}
+
 // Create 创建护理级别
 func (h *CareLevelHandler) Create(c *gin.Context) {
 	var req domain.CareLevel
@@ -173,14 +183,3 @@ func (h *CareLevelHandler) Delete(c *gin.Context) {
 		"success": true,
 	})
 }
-
-// RegisterRoutes 注册路由
-func (h *CareLevelHandler) RegisterRoutes(server *gin.Engine) {
-	group := server.Group("/api/care-levels")
-	group.GET("", h.GetList)
-	group.GET("/:id", h.GetById)
-	group.POST("", h.Create)
-	group.PUT("/:id", h.Update)
-	group.DELETE("/:id", h.Delete)
-}
-

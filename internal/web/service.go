@@ -21,6 +21,19 @@ func NewServiceHandler(svc *service.ServiceService) *ServiceHandler {
 	}
 }
 
+// RegisterRoutes 注册路由
+func (h *ServiceHandler) RegisterRoutes(server *gin.Engine) {
+	group := server.Group("/api/services")
+	group.GET("", h.GetServiceList)
+	group.GET("/:id", h.GetServiceById)
+	group.POST("", h.CreateService)
+	group.PUT("/:id", h.UpdateService)
+	group.DELETE("/:id", h.DeleteService)
+	group.POST("/purchase", h.PurchaseService)
+	group.GET("/customer/:customer_id", h.GetCustomerServices)
+	group.PUT("/customer-service/:id/end", h.EndService)
+}
+
 // CreateService 创建服务项目
 func (h *ServiceHandler) CreateService(c *gin.Context) {
 	var req domain.Service
@@ -311,17 +324,3 @@ func (h *ServiceHandler) EndService(c *gin.Context) {
 		"success": true,
 	})
 }
-
-// RegisterRoutes 注册路由
-func (h *ServiceHandler) RegisterRoutes(server *gin.Engine) {
-	group := server.Group("/api/services")
-	group.GET("", h.GetServiceList)
-	group.GET("/:id", h.GetServiceById)
-	group.POST("", h.CreateService)
-	group.PUT("/:id", h.UpdateService)
-	group.DELETE("/:id", h.DeleteService)
-	group.POST("/purchase", h.PurchaseService)
-	group.GET("/customer/:customer_id", h.GetCustomerServices)
-	group.PUT("/customer-service/:id/end", h.EndService)
-}
-

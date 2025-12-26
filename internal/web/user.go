@@ -18,6 +18,13 @@ func NewUserHandler(svc *service.UserService) *UserHandler {
 	}
 }
 
+// RegisterRoutes 注册用户相关路由
+func (h *UserHandler) RegisterRoutes(server *gin.Engine) {
+	// 注册和登录不需要JWT验证
+	server.POST("/api/user/register", h.Register)
+	server.POST("/api/user/login", h.Login)
+}
+
 // Register 用户注册
 func (h *UserHandler) Register(c *gin.Context) {
 	var req domain.UserRegisterRequest
@@ -73,11 +80,3 @@ func (h *UserHandler) Login(c *gin.Context) {
 		"token":   resp.Token,
 	})
 }
-
-// RegisterRoutes 注册用户相关路由
-func (h *UserHandler) RegisterRoutes(server *gin.Engine) {
-	// 注册和登录不需要JWT验证
-	server.POST("/api/user/register", h.Register)
-	server.POST("/api/user/login", h.Login)
-}
-

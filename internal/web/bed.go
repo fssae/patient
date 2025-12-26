@@ -20,6 +20,17 @@ func NewBedHandler(svc *service.BedService) *BedHandler {
 	}
 }
 
+// RegisterRoutes 注册路由
+func (h *BedHandler) RegisterRoutes(server *gin.Engine) {
+	group := server.Group("/api/beds")
+	group.GET("", h.GetList)
+	group.GET("/:id", h.GetById)
+	group.GET("/room/:room_id", h.GetByRoomID)
+	group.POST("", h.Create)
+	group.PUT("/:id/assign", h.AssignToCustomer)
+	group.PUT("/:id/release", h.Release)
+}
+
 // Create 创建床位
 func (h *BedHandler) Create(c *gin.Context) {
 	var req domain.Bed
@@ -220,15 +231,3 @@ func (h *BedHandler) Release(c *gin.Context) {
 		"success": true,
 	})
 }
-
-// RegisterRoutes 注册路由
-func (h *BedHandler) RegisterRoutes(server *gin.Engine) {
-	group := server.Group("/api/beds")
-	group.GET("", h.GetList)
-	group.GET("/:id", h.GetById)
-	group.GET("/room/:room_id", h.GetByRoomID)
-	group.POST("", h.Create)
-	group.PUT("/:id/assign", h.AssignToCustomer)
-	group.PUT("/:id/release", h.Release)
-}
-

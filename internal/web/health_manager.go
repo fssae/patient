@@ -20,6 +20,16 @@ func NewHealthManagerHandler(svc *service.HealthManagerService) *HealthManagerHa
 	}
 }
 
+// RegisterRoutes 注册路由
+func (h *HealthManagerHandler) RegisterRoutes(server *gin.Engine) {
+	group := server.Group("/api/health-managers")
+	group.GET("", h.GetList)
+	group.GET("/:id", h.GetById)
+	group.POST("", h.Create)
+	group.PUT("/:id", h.Update)
+	group.DELETE("/:id", h.Delete)
+}
+
 // Create 创建健康管家
 func (h *HealthManagerHandler) Create(c *gin.Context) {
 	var req domain.HealthManager
@@ -174,14 +184,3 @@ func (h *HealthManagerHandler) Delete(c *gin.Context) {
 		"success": true,
 	})
 }
-
-// RegisterRoutes 注册路由
-func (h *HealthManagerHandler) RegisterRoutes(server *gin.Engine) {
-	group := server.Group("/api/health-managers")
-	group.GET("", h.GetList)
-	group.GET("/:id", h.GetById)
-	group.POST("", h.Create)
-	group.PUT("/:id", h.Update)
-	group.DELETE("/:id", h.Delete)
-}
-

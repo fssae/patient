@@ -20,6 +20,16 @@ func NewRoomHandler(svc *service.RoomService) *RoomHandler {
 	}
 }
 
+// RegisterRoutes 注册路由
+func (h *RoomHandler) RegisterRoutes(server *gin.Engine) {
+	group := server.Group("/api/rooms")
+	group.GET("", h.GetList)
+	group.GET("/:id", h.GetById)
+	group.POST("", h.Create)
+	group.PUT("/:id", h.Update)
+	group.DELETE("/:id", h.Delete)
+}
+
 // Create 创建房间
 func (h *RoomHandler) Create(c *gin.Context) {
 	var req domain.Room
@@ -176,14 +186,3 @@ func (h *RoomHandler) Delete(c *gin.Context) {
 		"success": true,
 	})
 }
-
-// RegisterRoutes 注册路由
-func (h *RoomHandler) RegisterRoutes(server *gin.Engine) {
-	group := server.Group("/api/rooms")
-	group.GET("", h.GetList)
-	group.GET("/:id", h.GetById)
-	group.POST("", h.Create)
-	group.PUT("/:id", h.Update)
-	group.DELETE("/:id", h.Delete)
-}
-

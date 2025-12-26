@@ -20,6 +20,16 @@ func NewDietPlanHandler(svc *service.DietPlanService) *DietPlanHandler {
 	}
 }
 
+// RegisterRoutes 注册路由
+func (h *DietPlanHandler) RegisterRoutes(server *gin.Engine) {
+	group := server.Group("/api/diet-plans")
+	group.GET("", h.GetList)
+	group.GET("/:id", h.GetById)
+	group.POST("", h.Create)
+	group.PUT("/:id", h.Update)
+	group.DELETE("/:id", h.Delete)
+}
+
 // Create 创建膳食计划
 func (h *DietPlanHandler) Create(c *gin.Context) {
 	var req domain.DietPlan
@@ -173,14 +183,3 @@ func (h *DietPlanHandler) Delete(c *gin.Context) {
 		"success": true,
 	})
 }
-
-// RegisterRoutes 注册路由
-func (h *DietPlanHandler) RegisterRoutes(server *gin.Engine) {
-	group := server.Group("/api/diet-plans")
-	group.GET("", h.GetList)
-	group.GET("/:id", h.GetById)
-	group.POST("", h.Create)
-	group.PUT("/:id", h.Update)
-	group.DELETE("/:id", h.Delete)
-}
-

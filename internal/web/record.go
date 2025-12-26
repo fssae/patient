@@ -19,6 +19,17 @@ func NewRecordHandler(svc *service.RecordService) *RecordHandler {
 	}
 }
 
+// RegisterRoutes 注册路由
+func (h *RecordHandler) RegisterRoutes(server *gin.Engine) {
+	group := server.Group("/api/records")
+	group.POST("/check-in", h.CheckIn)
+	group.POST("/check-out", h.CheckOut)
+	group.POST("/outgoing", h.Outgoing)
+	group.POST("/return", h.Return)
+	group.GET("", h.GetList)
+	group.GET("/customer/:customer_id", h.GetByCustomerID)
+}
+
 // CheckIn 入住登记
 func (h *RecordHandler) CheckIn(c *gin.Context) {
 	var req struct {
@@ -253,15 +264,3 @@ func (h *RecordHandler) GetByCustomerID(c *gin.Context) {
 		"data":    records,
 	})
 }
-
-// RegisterRoutes 注册路由
-func (h *RecordHandler) RegisterRoutes(server *gin.Engine) {
-	group := server.Group("/api/records")
-	group.POST("/check-in", h.CheckIn)
-	group.POST("/check-out", h.CheckOut)
-	group.POST("/outgoing", h.Outgoing)
-	group.POST("/return", h.Return)
-	group.GET("", h.GetList)
-	group.GET("/customer/:customer_id", h.GetByCustomerID)
-}
-
