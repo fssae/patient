@@ -10,7 +10,7 @@ import (
 )
 
 func InitApiColl(engine *gin.Engine, db1 *mongo.Client, client redis.Cmdable) {
-	db := db1.Database("classroom")
+	db := db1.Database("patient")
 	//更新api集合的api
 	routes := engine.Routes()
 	apiColl := db.Collection("api")

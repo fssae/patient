@@ -42,7 +42,7 @@ func (app *App) Start() error {
 	app.RegisterDebugRoute()
 	ioc.StartKafkaResponseConsumer()
 	ioc.InitApiColl(app.server, app.mongodb, app.redis)
-	return app.server.Run(":8080")
+	return app.server.Run(":8081")
 }
 func startCronJobs() {
 	c := cron.New()

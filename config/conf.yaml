@@ -13,7 +13,7 @@ redis:
 minio:
   address : "82.156.64.69"
   port: "9000"
-  bucket : "classroom"
+  bucket : "patient"
   access_key: "5zTjCQ1WECXpjrlmIKKm"
   secret_key: "5PLvbogKQNWgMnw6j62py6nYh1QJvQpMvCLVfllb"
 role:
