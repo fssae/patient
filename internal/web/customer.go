@@ -35,6 +35,15 @@ func (h *CustomerHandler) RegisterRoutes(server *gin.Engine) {
 }
 
 // Create 创建客户
+// @Summary      创建客户
+// @Description  创建新的客户记录
+// @Tags         客户管理
+// @Accept       json
+// @Produce      json
+// @Param        request  body      domain.Customer  true  "客户信息"
+// @Success      200      {object}  map[string]interface{}  "创建成功"
+// @Failure      400      {object}  map[string]interface{}  "请求参数错误"
+// @Router       /customers [post]
 func (h *CustomerHandler) Create(c *gin.Context) {
 	var req domain.Customer
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -62,6 +71,16 @@ func (h *CustomerHandler) Create(c *gin.Context) {
 }
 
 // GetById 获取客户详情
+// @Summary      获取客户详情
+// @Description  根据ID获取客户详细信息
+// @Tags         客户管理
+// @Accept       json
+// @Produce      json
+// @Param        id   path      string  true  "客户ID"
+// @Success      200  {object}  map[string]interface{}  "获取成功"
+// @Failure      400  {object}  map[string]interface{}  "无效的ID"
+// @Failure      404  {object}  map[string]interface{}  "客户不存在"
+// @Router       /customers/{id} [get]
 func (h *CustomerHandler) GetById(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := primitive.ObjectIDFromHex(idStr)
@@ -98,6 +117,16 @@ func (h *CustomerHandler) GetById(c *gin.Context) {
 }
 
 // GetList 获取客户列表
+// @Summary      获取客户列表
+// @Description  分页获取客户列表，支持按状态筛选
+// @Tags         客户管理
+// @Accept       json
+// @Produce      json
+// @Param        status  query     string  false  "客户状态：入住中/已退住/外出中"
+// @Param        skip    query     int     false  "跳过数量"  default(0)
+// @Param        limit   query     int     false  "每页数量"  default(20)
+// @Success      200     {object}  map[string]interface{}  "获取成功"
+// @Router       /customers [get]
 func (h *CustomerHandler) GetList(c *gin.Context) {
 	status := c.Query("status")
 	skipStr := c.DefaultQuery("skip", "0")

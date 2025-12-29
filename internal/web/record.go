@@ -31,6 +31,15 @@ func (h *RecordHandler) RegisterRoutes(server *gin.Engine) {
 }
 
 // CheckIn 入住登记
+// @Summary      入住登记
+// @Description  为客户办理入住登记，自动分配床位并更新客户状态
+// @Tags         登记管理
+// @Accept       json
+// @Produce      json
+// @Param        request  body      object  true  "入住信息"  example({"customer_id":"507f1f77bcf86cd799439011","bed_id":"507f1f77bcf86cd799439012","note":"客户入住","created_by":"管理员"})
+// @Success      200      {object}  map[string]interface{}  "入住登记成功"
+// @Failure      400      {object}  map[string]interface{}  "请求参数错误"
+// @Router       /records/check-in [post]
 func (h *RecordHandler) CheckIn(c *gin.Context) {
 	var req struct {
 		CustomerID string `json:"customer_id" binding:"required"`
@@ -84,6 +93,15 @@ func (h *RecordHandler) CheckIn(c *gin.Context) {
 }
 
 // CheckOut 退住登记
+// @Summary      退住登记
+// @Description  为客户办理退住登记，释放床位并更新客户状态
+// @Tags         登记管理
+// @Accept       json
+// @Produce      json
+// @Param        request  body      object  true  "退住信息"  example({"customer_id":"507f1f77bcf86cd799439011","note":"客户退住","created_by":"管理员"})
+// @Success      200      {object}  map[string]interface{}  "退住登记成功"
+// @Failure      400      {object}  map[string]interface{}  "请求参数错误"
+// @Router       /records/check-out [post]
 func (h *RecordHandler) CheckOut(c *gin.Context) {
 	var req struct {
 		CustomerID string `json:"customer_id" binding:"required"`

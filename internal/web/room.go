@@ -31,6 +31,15 @@ func (h *RoomHandler) RegisterRoutes(server *gin.Engine) {
 }
 
 // Create 创建房间
+// @Summary      创建房间
+// @Description  创建新的房间记录
+// @Tags         房间管理
+// @Accept       json
+// @Produce      json
+// @Param        request  body      domain.Room  true  "房间信息"
+// @Success      200      {object}  map[string]interface{}  "创建成功"
+// @Failure      400      {object}  map[string]interface{}  "请求参数错误"
+// @Router       /rooms [post]
 func (h *RoomHandler) Create(c *gin.Context) {
 	var req domain.Room
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -94,6 +103,17 @@ func (h *RoomHandler) GetById(c *gin.Context) {
 }
 
 // GetList 获取房间列表
+// @Summary      获取房间列表
+// @Description  分页获取房间列表，支持按状态和楼层筛选
+// @Tags         房间管理
+// @Accept       json
+// @Produce      json
+// @Param        status  query     string  false  "房间状态：可用/已满/维护中"
+// @Param        floor   query     int     false  "楼层"
+// @Param        skip    query     int     false  "跳过数量"  default(0)
+// @Param        limit   query     int     false  "每页数量"  default(20)
+// @Success      200     {object}  map[string]interface{}  "获取成功"
+// @Router       /rooms [get]
 func (h *RoomHandler) GetList(c *gin.Context) {
 	status := c.Query("status")
 	floorStr := c.Query("floor")

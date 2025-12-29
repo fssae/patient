@@ -157,6 +157,16 @@ func (h *BedHandler) GetList(c *gin.Context) {
 }
 
 // AssignToCustomer 分配床位给客户
+// @Summary      分配床位
+// @Description  将床位分配给指定客户
+// @Tags         床位管理
+// @Accept       json
+// @Produce      json
+// @Param        id       path      string  true  "床位ID"
+// @Param        request  body      object  true  "分配信息"  example({"customer_id":"507f1f77bcf86cd799439011"})
+// @Success      200      {object}  map[string]interface{}  "分配成功"
+// @Failure      400      {object}  map[string]interface{}  "请求参数错误"
+// @Router       /beds/{id}/assign [put]
 func (h *BedHandler) AssignToCustomer(c *gin.Context) {
 	bedIDStr := c.Param("id")
 	bedID, err := primitive.ObjectIDFromHex(bedIDStr)

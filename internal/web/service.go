@@ -191,6 +191,15 @@ func (h *ServiceHandler) DeleteService(c *gin.Context) {
 }
 
 // PurchaseService 客户购买服务
+// @Summary      客户购买服务
+// @Description  为客户购买指定的服务项目
+// @Tags         服务管理
+// @Accept       json
+// @Produce      json
+// @Param        request  body      object  true  "购买信息"  example({"customer_id":"507f1f77bcf86cd799439011","service_id":"507f1f77bcf86cd799439012","start_date":"2024-01-01"})
+// @Success      200      {object}  map[string]interface{}  "购买成功"
+// @Failure      400      {object}  map[string]interface{}  "请求参数错误"
+// @Router       /services/purchase [post]
 func (h *ServiceHandler) PurchaseService(c *gin.Context) {
 	var req struct {
 		CustomerID string `json:"customer_id" binding:"required"`
