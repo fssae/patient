@@ -7,6 +7,8 @@ import (
 func main() {
 	//初始化
 	setupEnvironment()
+	//启动定时任务
+	startCronJobs()
 	//启动服务
 	app := InitWebServer()
 	if err := app.Start(); err != nil {

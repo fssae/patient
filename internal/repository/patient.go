@@ -44,9 +44,9 @@ func (r *PatientRepository) Login(ctx context.Context, patientId, password strin
 }
 
 // Register 教师注册
-func (r *PatientRepository) Register(ctx context.Context, patientId, password string) error {
-	//判断教师是否存在
-	patient, err := r.patientDAO.FindByPatientAccount(ctx, patientId)
+func (r *PatientRepository) Register(ctx context.Context, patientphone, password string) error {
+	//判断教师是否存在，用手机号判断
+	patient, err := r.patientDAO.FindByPatientAccount(ctx, patientphone)
 
 	//教师存在不可以在创建
 	if err == nil {
@@ -59,8 +59,8 @@ func (r *PatientRepository) Register(ctx context.Context, patientId, password st
 		return err
 	}
 	patient = &domain.Patient{
-		PatientId: patientId,
-		Password:  string(hashedPassword),
+		Phone:    patientphone,
+		Password: string(hashedPassword),
 	}
 	return r.patientDAO.Create(ctx, patient)
 }

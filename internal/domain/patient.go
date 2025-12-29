@@ -24,8 +24,8 @@ type PatientLoginRequest struct {
 }
 
 type PatientRegisterRequest struct {
-	PatientId string `json:"patientId" binding:"required"`
-	Password  string `json:"password" binding:"required"`
+	PatientPhone string `json:"patientphone" binding:"required"`
+	Password     string `json:"password" binding:"required"`
 }
 
 type PatientLoginResponse struct {

@@ -40,7 +40,7 @@ func (s *PatientService) Login(ctx context.Context, req *domain.PatientLoginRequ
 
 // Register 教师注册
 func (s *PatientService) Register(ctx context.Context, req *domain.PatientRegisterRequest) error {
-	err := s.patientRepo.Register(ctx, req.PatientId, req.Password)
+	err := s.patientRepo.Register(ctx, req.PatientPhone, req.Password)
 
 	if err != nil { // 处理注册失败的情况
 		return err

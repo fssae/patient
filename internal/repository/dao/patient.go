@@ -33,9 +33,9 @@ func (dao *PatientDAO) Create(ctx context.Context, patient *domain.Patient) erro
 }
 
 // FindByPatientId 根据工号查找教师
-func (dao *PatientDAO) FindByPatientAccount(ctx context.Context, patientId string) (*domain.Patient, error) {
+func (dao *PatientDAO) FindByPatientAccount(ctx context.Context, patientPhone string) (*domain.Patient, error) {
 	var patient domain.Patient
-	err := dao.collection.FindOne(ctx, bson.M{"patientId": patientId}).Decode(&patient)
+	err := dao.collection.FindOne(ctx, bson.M{"patientPhone": patientPhone}).Decode(&patient)
 	if err != nil {
 		return nil, err
 	}
