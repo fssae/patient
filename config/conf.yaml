@@ -1,5 +1,6 @@
 mongodb:
   account: admin
+  password: zjh770910
   address1: 82.156.64.69
 #  address2 : 82.156.64.69
 #  address3 : 82.156.64.69

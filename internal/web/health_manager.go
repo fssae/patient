@@ -21,7 +21,7 @@ func NewHealthManagerHandler(svc *service.HealthManagerService) *HealthManagerHa
 }
 
 // RegisterRoutes 注册路由
-func (h *HealthManagerHandler) RegisterRoutes(server *gin.Engine) {
+func (h *HealthManagerHandler) RegisterRoutes(server gin.IRouter) {
 	group := server.Group("/api/health-managers")
 	group.GET("", h.GetList)
 	group.GET("/:id", h.GetById)

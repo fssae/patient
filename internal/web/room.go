@@ -21,7 +21,7 @@ func NewRoomHandler(svc *service.RoomService) *RoomHandler {
 }
 
 // RegisterRoutes 注册路由
-func (h *RoomHandler) RegisterRoutes(server *gin.Engine) {
+func (h *RoomHandler) RegisterRoutes(server gin.IRouter) {
 	group := server.Group("/api/rooms")
 	group.GET("", h.GetList)
 	group.GET("/:id", h.GetById)
@@ -116,13 +116,13 @@ func (h *RoomHandler) GetById(c *gin.Context) {
 // @Router       /rooms [get]
 func (h *RoomHandler) GetList(c *gin.Context) {
 	status := c.Query("status")
-	floorStr := c.Query("floor")
+	room := c.Query("room")
 	skipStr := c.DefaultQuery("skip", "0")
 	limitStr := c.DefaultQuery("limit", "20")
 
 	skip, _ := strconv.ParseInt(skipStr, 10, 64)
 	limit, _ := strconv.ParseInt(limitStr, 10, 64)
-	floor, _ := strconv.Atoi(floorStr)
+	floor, _ := strconv.Atoi(room)
 
 	list, total, err := h.svc.GetList(c.Request.Context(), status, floor, skip, limit)
 	if err != nil {

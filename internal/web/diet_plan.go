@@ -21,7 +21,7 @@ func NewDietPlanHandler(svc *service.DietPlanService) *DietPlanHandler {
 }
 
 // RegisterRoutes 注册路由
-func (h *DietPlanHandler) RegisterRoutes(server *gin.Engine) {
+func (h *DietPlanHandler) RegisterRoutes(server gin.IRouter) {
 	group := server.Group("/api/diet-plans")
 	group.GET("", h.GetList)
 	group.GET("/:id", h.GetById)

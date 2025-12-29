@@ -21,7 +21,7 @@ func NewCustomerHandler(svc *service.CustomerService) *CustomerHandler {
 }
 
 // RegisterRoutes 注册路由
-func (h *CustomerHandler) RegisterRoutes(server *gin.Engine) {
+func (h *CustomerHandler) RegisterRoutes(server gin.IRouter) {
 	group := server.Group("/api/customers")
 	group.GET("", h.GetList)
 	group.GET("/:id", h.GetById)

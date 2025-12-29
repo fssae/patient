@@ -18,7 +18,7 @@ func NewFileHandler(svc service.FileServiceInterface) *FileHandler {
 	}
 }
 
-func (f *FileHandler) RegisterRoutes(server *gin.Engine) {
+func (f *FileHandler) RegisterRoutes(server gin.IRouter) {
 	server.POST("/upload/image", ginx.Wrap(f.UploadImage))
 	server.POST("/upload/video", ginx.Wrap(f.UploadVideo))
 }

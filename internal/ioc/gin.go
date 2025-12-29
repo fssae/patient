@@ -24,34 +24,38 @@ func InitGin(
 	serviceHandler *web.ServiceHandler,
 ) *gin.Engine {
 	engine := gin.Default()
-
-	middlewares := InitMiddlewares(loggers)
-	for _, middleware := range middlewares {
-		engine.Use(middleware)
+	// 1. 注册基础全局中间件（不包含 JWT）
+	engine.Use(gin.Recovery(), gin.Logger())
+	for _, m := range loggers {
+		engine.Use(m)
 	}
-	// 注册教师相关路由
-	patientHandler.RegisterRoutes(engine)
-	// 注册文件上传相关路由
-	fileHandler.RegisterRoutes(engine)
-	// 注册用户相关路由（注册、登录）
+	// 2. 公共路由分组（不需要 JWT）
+	// 假设你的登录注册在 userHandler 里
 	userHandler.RegisterRoutes(engine)
-	// 注册健康管家相关路由
-	healthManagerHandler.RegisterRoutes(engine)
-	// 注册房间相关路由
-	roomHandler.RegisterRoutes(engine)
-	// 注册床位相关路由
-	bedHandler.RegisterRoutes(engine)
-	// 注册护理级别相关路由
-	careLevelHandler.RegisterRoutes(engine)
-	// 注册膳食计划相关路由
-	dietPlanHandler.RegisterRoutes(engine)
-	// 注册客户相关路由
-	customerHandler.RegisterRoutes(engine)
-	// 注册登记记录相关路由
-	recordHandler.RegisterRoutes(engine)
-	// 注册服务相关路由
-	serviceHandler.RegisterRoutes(engine)
+	patientHandler.RegisterRoutes(engine)
+	authGroup := engine.Group("/")
+	authGroup.Use(GetJWTMiddleware()) // 只在这个组里应用 JWT
+	{
+		// 注册文件上传相关路由
+		fileHandler.RegisterRoutes(authGroup)
 
+		// 注册健康管家相关路由
+		healthManagerHandler.RegisterRoutes(authGroup)
+		// 注册房间相关路由
+		roomHandler.RegisterRoutes(authGroup)
+		// 注册床位相关路由
+		bedHandler.RegisterRoutes(authGroup)
+		// 注册护理级别相关路由
+		careLevelHandler.RegisterRoutes(authGroup)
+		// 注册膳食计划相关路由
+		dietPlanHandler.RegisterRoutes(authGroup)
+		// 注册客户相关路由
+		customerHandler.RegisterRoutes(authGroup)
+		// 注册登记记录相关路由
+		recordHandler.RegisterRoutes(authGroup)
+		// 注册服务相关路由
+		serviceHandler.RegisterRoutes(authGroup)
+	}
 	// Swagger文档路由
 	engine.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 

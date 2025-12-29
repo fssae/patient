@@ -21,7 +21,7 @@ func NewBedHandler(svc *service.BedService) *BedHandler {
 }
 
 // RegisterRoutes 注册路由
-func (h *BedHandler) RegisterRoutes(server *gin.Engine) {
+func (h *BedHandler) RegisterRoutes(server gin.IRouter) {
 	group := server.Group("/api/beds")
 	group.GET("", h.GetList)
 	group.GET("/:id", h.GetById)

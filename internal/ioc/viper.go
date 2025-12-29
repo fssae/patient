@@ -23,6 +23,7 @@ type Config struct {
 
 type MongodbConfig struct {
 	Account  string `mapstructure:"account"`
+	Password string `mapstructure:"password"`
 	Address1 string `mapstructure:"address1"`
 	Port1    int    `mapstructure:"port1"`
 }

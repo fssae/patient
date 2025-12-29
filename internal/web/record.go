@@ -20,7 +20,7 @@ func NewRecordHandler(svc *service.RecordService) *RecordHandler {
 }
 
 // RegisterRoutes 注册路由
-func (h *RecordHandler) RegisterRoutes(server *gin.Engine) {
+func (h *RecordHandler) RegisterRoutes(server gin.IRouter) {
 	group := server.Group("/api/records")
 	group.POST("/check-in", h.CheckIn)
 	group.POST("/check-out", h.CheckOut)

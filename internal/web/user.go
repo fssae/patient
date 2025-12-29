@@ -19,7 +19,7 @@ func NewUserHandler(svc *service.UserService) *UserHandler {
 }
 
 // RegisterRoutes 注册用户相关路由
-func (h *UserHandler) RegisterRoutes(server *gin.Engine) {
+func (h *UserHandler) RegisterRoutes(server gin.IRouter) {
 	// 注册和登录不需要JWT验证
 	server.POST("/api/user/register", h.Register)
 	server.POST("/api/user/login", h.Login)

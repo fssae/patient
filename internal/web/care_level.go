@@ -21,7 +21,7 @@ func NewCareLevelHandler(svc *service.CareLevelService) *CareLevelHandler {
 }
 
 // RegisterRoutes 注册路由
-func (h *CareLevelHandler) RegisterRoutes(server *gin.Engine) {
+func (h *CareLevelHandler) RegisterRoutes(server gin.IRouter) {
 	group := server.Group("/api/care-levels")
 	group.GET("", h.GetList)
 	group.GET("/:id", h.GetById)

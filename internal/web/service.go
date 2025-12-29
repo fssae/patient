@@ -22,7 +22,7 @@ func NewServiceHandler(svc *service.ServiceService) *ServiceHandler {
 }
 
 // RegisterRoutes 注册路由
-func (h *ServiceHandler) RegisterRoutes(server *gin.Engine) {
+func (h *ServiceHandler) RegisterRoutes(server gin.IRouter) {
 	group := server.Group("/api/services")
 	group.GET("", h.GetServiceList)
 	group.GET("/:id", h.GetServiceById)
