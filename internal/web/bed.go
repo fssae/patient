@@ -25,10 +25,12 @@ func NewBedHandler(svc *service.BedService) *BedHandler {
 func (h *BedHandler) RegisterRoutes(server gin.IRouter) {
 	group := server.Group("/api/beds")
 	group.GET("", h.GetList)
+	group.GET("/options/beds", h.GetBedOptions)
+	group.GET("/options/rooms", h.GetRoomOptions)
 	group.GET("/:id", h.GetById)
 	group.GET("/room/:room_id", h.GetByRoomID)
 	group.POST("", h.Create)
-	group.PUT("/:id/assign", h.AssignToCustomer)
+	group.PUT("/:id", h.Update)
 	group.PUT("/:id/release", h.Release)
 	group.DELETE("/:id", h.DeleteBed)
 }
@@ -150,7 +152,8 @@ func (h *BedHandler) GetByRoomID(c *gin.Context) {
 
 // GetList 获取床位列表
 func (h *BedHandler) GetList(c *gin.Context) {
-	roomIDStr := c.Query("room_id")
+	roomNumber := c.Query("room_number")
+	bedNumber := c.Query("bed_number")
 	status := c.Query("status")
 	skipStr := c.DefaultQuery("skip", "0")
 	limitStr := c.DefaultQuery("limit", "20")
@@ -158,12 +161,7 @@ func (h *BedHandler) GetList(c *gin.Context) {
 	skip, _ := strconv.ParseInt(skipStr, 10, 64)
 	limit, _ := strconv.ParseInt(limitStr, 10, 64)
 
-	var roomID primitive.ObjectID
-	if roomIDStr != "" {
-		roomID, _ = primitive.ObjectIDFromHex(roomIDStr)
-	}
-
-	list, total, err := h.svc.GetList(c.Request.Context(), roomID, status, skip, limit)
+	list, total, err := h.svc.GetList(c.Request.Context(), roomNumber, bedNumber, status, skip, limit)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code": 500,
@@ -181,20 +179,20 @@ func (h *BedHandler) GetList(c *gin.Context) {
 	})
 }
 
-// AssignToCustomer 分配床位给客户
-// @Summary      分配床位
-// @Description  将床位分配给指定客户
+// Update 更新床位信息
+// @Summary      更新床位
+// @Description  更新床位信息
 // @Tags         床位管理
 // @Accept       json
 // @Produce      json
-// @Param        id       path      string  true  "床位ID"
-// @Param        request  body      object  true  "分配信息"  example({"customer_id":"507f1f77bcf86cd799439011"})
-// @Success      200      {object}  map[string]interface{}  "分配成功"
+// @Param        id       path      string             true  "床位ID"
+// @Param        request  body      domain.Bed  true  "床位信息"
+// @Success      200      {object}  map[string]interface{}  "更新成功"
 // @Failure      400      {object}  map[string]interface{}  "请求参数错误"
-// @Router       /beds/{id}/assign [put]
-func (h *BedHandler) AssignToCustomer(c *gin.Context) {
-	bedIDStr := c.Param("id")
-	bedID, err := primitive.ObjectIDFromHex(bedIDStr)
+// @Router       /beds/{id} [put]
+func (h *BedHandler) Update(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := primitive.ObjectIDFromHex(idStr)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code": 400,
@@ -203,27 +201,12 @@ func (h *BedHandler) AssignToCustomer(c *gin.Context) {
 		return
 	}
 
-	var req struct {
-		CustomerID string `json:"customer_id" binding:"required"`
-	}
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code": 400,
-			"msg":  "请求参数错误: " + err.Error(),
-		})
+	var req domain.Bed
+	if util.HandleError(c, c.ShouldBindJSON(&req)) {
 		return
 	}
 
-	customerID, err := primitive.ObjectIDFromHex(req.CustomerID)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code": 400,
-			"msg":  "无效的客户ID",
-		})
-		return
-	}
-
-	err = h.svc.AssignToCustomer(c.Request.Context(), bedID, customerID)
+	err = h.svc.Update(c.Request.Context(), id, &req)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code": 400,
@@ -234,7 +217,7 @@ func (h *BedHandler) AssignToCustomer(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"code":    200,
-		"msg":     "分配成功",
+		"msg":     "更新成功",
 		"success": true,
 	})
 }
@@ -264,5 +247,43 @@ func (h *BedHandler) Release(c *gin.Context) {
 		"code":    200,
 		"msg":     "释放成功",
 		"success": true,
+	})
+}
+
+// GetBedOptions 获取床位选项列表
+func (h *BedHandler) GetBedOptions(c *gin.Context) {
+	options, err := h.svc.GetBedOptions(c.Request.Context())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code": 500,
+			"msg":  err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":    200,
+		"msg":     "获取成功",
+		"success": true,
+		"data":    options,
+	})
+}
+
+// GetRoomOptions 获取房间选项列表
+func (h *BedHandler) GetRoomOptions(c *gin.Context) {
+	options, err := h.svc.GetRoomOptions(c.Request.Context())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code": 500,
+			"msg":  err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":    200,
+		"msg":     "获取成功",
+		"success": true,
+		"data":    options,
 	})
 }

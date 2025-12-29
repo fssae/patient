@@ -111,8 +111,54 @@ type Customer struct {
 	Status          string             `json:"status" bson:"status"`                                           // 状态："入住中"/"已退住"/"外出中"
 	CheckInDate     time.Time          `json:"check_in_date,omitempty" bson:"check_in_date,omitempty"`         // 入住日期
 	CheckOutDate    time.Time          `json:"check_out_date,omitempty" bson:"check_out_date,omitempty"`       // 退住日期
-	CreatedAt       time.Time          `json:"created_at" bson:"created_at"`
-	UpdatedAt       time.Time          `json:"updated_at" bson:"updated_at"`
+
+	// 健康状况
+	HealthLevel    string `json:"health_level" bson:"health_level"`       // 健康等级
+	MedicalHistory string `json:"medical_history" bson:"medical_history"` // 既往病史
+	Medication     string `json:"medication" bson:"medication"`           // 用药情况
+	AllergyHistory string `json:"allergy_history" bson:"allergy_history"` // 过敏史
+
+	// 紧急联系人
+	ContactName    string `json:"contact_name" bson:"contact_name"`       // 联系人姓名
+	Relationship   string `json:"relationship" bson:"relationship"`       // 关系
+	ContactPhone   string `json:"contact_phone" bson:"contact_phone"`     // 联系电话
+	ContactAddress string `json:"contact_address" bson:"contact_address"` // 联系地址
+
+	Remarks string `json:"remarks" bson:"remarks"` // 备注说明
+
+	CreatedAt time.Time `json:"created_at" bson:"created_at"`
+	UpdatedAt time.Time `json:"updated_at" bson:"updated_at"`
+}
+
+// 入住老人
+type ElderlyRegisterRequest struct {
+	// 基本信息
+	Name        string `json:"name"`                       // 姓名
+	Gender      string `json:"gender" binding:"required"`  // 性别 (男/女)
+	Age         int    `json:"age" binding:"required"`     // 年龄
+	IDCard      string `json:"id_card" binding:"required"` // 身份证号
+	PhoneNumber string `json:"phone_number"`               // 联系电话
+	HomeAddress string `json:"home_address"`               // 家庭住址
+
+	// 健康状况记录
+	HealthLevel    string `json:"health_level" binding:"required"` // 健康等级 (健康/较好/一般/较差)
+	MedicalHistory string `json:"medical_history"`                 // 既往病史
+	Medication     string `json:"medication"`                      // 用药情况
+	AllergyHistory string `json:"allergy_history"`                 // 过敏史
+
+	// 紧急联系人信息
+	ContactName    string `json:"contact_name" binding:"required"`  // 联系人姓名
+	Relationship   string `json:"relationship" binding:"required"`  // 关系
+	ContactPhone   string `json:"contact_phone" binding:"required"` // 联系电话
+	ContactAddress string `json:"contact_address"`                  // 联系地址
+
+	// 入住安排详情
+	CheckInDate  string `json:"check_in_date"`                    // 入住日期 (建议格式 "2025-01-01")
+	BedID        string `json:"bed_id" binding:"required"`        // 床位分配
+	NursingLevel string `json:"nursing_level" binding:"required"` // 护理级别
+	DietaryType  string `json:"dietary_type" binding:"required"`  // 膳食类型
+
+	Remarks string `json:"remarks"` // 备注说明
 }
 
 // DietPlan 膳食计划
