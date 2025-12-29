@@ -24,19 +24,18 @@ func NewBedService(repo repository.BedRepository, roomRepo repository.RoomReposi
 }
 
 // Create 创建床位
-func (s *BedService) Create(ctx context.Context, req *domain.Bed) error {
+func (s *BedService) Create(ctx context.Context, req *domain.CreateBedRequest) error {
 	// 验证房间是否存在
-	room, err := s.roomRepo.FindById(ctx, req.RoomID)
+	room, err := s.roomRepo.FindById(ctx, req.BedID)
 	if err != nil {
 		return err
 	}
 	if room == nil {
 		return errors.New("房间不存在")
 	}
-
 	bed := &domain.Bed{
-		RoomID:    req.RoomID,
-		Number:    req.Number,
+		RoomID:    req.BedID,
+		Number:    room.Number,
 		Status:    "空闲",
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
@@ -104,3 +103,17 @@ func (s *BedService) Update(ctx context.Context, id primitive.ObjectID, req *dom
 	return s.repo.Update(ctx, bed)
 }
 
+// Delete 删除床位
+func (s *BedService) Delete(ctx context.Context, id primitive.ObjectID) error {
+	bed, err := s.repo.FindById(ctx, id)
+	if err != nil {
+		return err
+	}
+	if bed == nil {
+		return errors.New("床位不存在")
+	}
+	if bed.Status == "占用" {
+		return errors.New("床位已被占用，无法删除")
+	}
+	return s.repo.Delete(ctx, id)
+}

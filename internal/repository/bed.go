@@ -18,6 +18,7 @@ type BedRepository interface {
 	Update(ctx context.Context, bed *domain.Bed) error
 	AssignToCustomer(ctx context.Context, bedID, customerID primitive.ObjectID) error
 	Release(ctx context.Context, bedID primitive.ObjectID) error
+	Delete(ctx context.Context, id primitive.ObjectID) error
 }
 
 type bedRepository struct {
@@ -62,3 +63,6 @@ func (r *bedRepository) Release(ctx context.Context, bedID primitive.ObjectID) e
 	return r.dao.Release(ctx, bedID)
 }
 
+func (r *bedRepository) Delete(ctx context.Context, id primitive.ObjectID) error {
+	return r.dao.Delete(ctx, id)
+}

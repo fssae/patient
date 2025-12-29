@@ -23,6 +23,16 @@ func (f *FileHandler) RegisterRoutes(server gin.IRouter) {
 	server.POST("/upload/video", ginx.Wrap(f.UploadVideo))
 }
 
+// UploadImage 上传图片
+// @Summary      上传图片
+// @Description  上传图片文件
+// @Tags         文件上传
+// @Accept       multipart/form-data
+// @Produce      json
+// @Param        file     formData  file  true  "图片文件"
+// @Success      200      {object}  map[string]interface{}  "上传成功"
+// @Failure      400      {object}  map[string]interface{}  "上传失败"
+// @Router       /upload/image [post]
 func (f *FileHandler) UploadImage(c *gin.Context) (ginx.Response, error) {
 	file, err := c.FormFile("file")
 	if err != nil {
@@ -44,6 +54,16 @@ func (f *FileHandler) UploadImage(c *gin.Context) (ginx.Response, error) {
 	}), nil
 }
 
+// UploadVideo 上传视频
+// @Summary      上传视频
+// @Description  上传视频文件
+// @Tags         文件上传
+// @Accept       multipart/form-data
+// @Produce      json
+// @Param        file     formData  file  true  "视频文件"
+// @Success      200      {object}  map[string]interface{}  "上传成功"
+// @Failure      400      {object}  map[string]interface{}  "上传失败"
+// @Router       /upload/video [post]
 func (f *FileHandler) UploadVideo(c *gin.Context) (ginx.Response, error) {
 	file, err := c.FormFile("file")
 	if err != nil {

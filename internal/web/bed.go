@@ -3,6 +3,7 @@ package web
 import (
 	"classroom-analysis/internal/domain"
 	"classroom-analysis/internal/service"
+	"classroom-analysis/internal/util"
 	"net/http"
 	"strconv"
 
@@ -29,19 +30,43 @@ func (h *BedHandler) RegisterRoutes(server gin.IRouter) {
 	group.POST("", h.Create)
 	group.PUT("/:id/assign", h.AssignToCustomer)
 	group.PUT("/:id/release", h.Release)
+	group.DELETE("/:id", h.DeleteBed)
 }
 
-// Create 创建床位
-func (h *BedHandler) Create(c *gin.Context) {
-	var req domain.Bed
-	if err := c.ShouldBindJSON(&req); err != nil {
+// DeleteBed 删除床位
+func (h *BedHandler) DeleteBed(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := primitive.ObjectIDFromHex(idStr)
+	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code": 400,
-			"msg":  "请求参数错误: " + err.Error(),
+			"msg":  "无效的ID",
 		})
 		return
 	}
 
+	err = h.svc.Delete(c.Request.Context(), id)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code": 400,
+			"msg":  err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":    200,
+		"msg":     "删除成功",
+		"success": true,
+	})
+}
+
+// Create 创建床位
+func (h *BedHandler) Create(c *gin.Context) {
+	var req domain.CreateBedRequest
+	if util.HandleError(c, c.ShouldBindJSON(&req)) {
+		return
+	}
 	err := h.svc.Create(c.Request.Context(), &req)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{

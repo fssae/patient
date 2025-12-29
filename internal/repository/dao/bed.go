@@ -121,8 +121,8 @@ func (dao *BedDAO) AssignToCustomer(ctx context.Context, bedID, customerID primi
 		bson.M{"_id": bedID},
 		bson.M{"$set": bson.M{
 			"customer_id": customerID,
-			"status":       "占用",
-			"updated_at":   time.Now(),
+			"status":      "占用",
+			"updated_at":  time.Now(),
 		}},
 	)
 	return err
@@ -135,10 +135,15 @@ func (dao *BedDAO) Release(ctx context.Context, bedID primitive.ObjectID) error 
 		bson.M{"_id": bedID},
 		bson.M{"$set": bson.M{
 			"customer_id": primitive.NilObjectID,
-			"status":       "空闲",
-			"updated_at":   time.Now(),
+			"status":      "空闲",
+			"updated_at":  time.Now(),
 		}},
 	)
 	return err
 }
 
+// Delete 删除床位
+func (dao *BedDAO) Delete(ctx context.Context, id primitive.ObjectID) error {
+	_, err := dao.collection.DeleteOne(ctx, bson.M{"_id": id})
+	return err
+}

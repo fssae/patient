@@ -31,6 +31,15 @@ func (h *CareLevelHandler) RegisterRoutes(server gin.IRouter) {
 }
 
 // Create 创建护理级别
+// @Summary      创建护理级别
+// @Description  创建新的护理级别
+// @Tags         护理级别管理
+// @Accept       json
+// @Produce      json
+// @Param        request  body      domain.CareLevel  true  "护理级别信息"
+// @Success      200      {object}  map[string]interface{}  "创建成功"
+// @Failure      400      {object}  map[string]interface{}  "请求参数错误"
+// @Router       /care-levels [post]
 func (h *CareLevelHandler) Create(c *gin.Context) {
 	var req domain.CareLevel
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -58,6 +67,16 @@ func (h *CareLevelHandler) Create(c *gin.Context) {
 }
 
 // GetById 获取护理级别详情
+// @Summary      获取护理级别详情
+// @Description  根据ID获取护理级别详细信息
+// @Tags         护理级别管理
+// @Accept       json
+// @Produce      json
+// @Param        id   path      string  true  "护理级别ID"
+// @Success      200  {object}  map[string]interface{}  "获取成功"
+// @Failure      400  {object}  map[string]interface{}  "无效的ID"
+// @Failure      404  {object}  map[string]interface{}  "护理级别不存在"
+// @Router       /care-levels/{id} [get]
 func (h *CareLevelHandler) GetById(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := primitive.ObjectIDFromHex(idStr)
@@ -94,6 +113,15 @@ func (h *CareLevelHandler) GetById(c *gin.Context) {
 }
 
 // GetList 获取护理级别列表
+// @Summary      获取护理级别列表
+// @Description  分页获取护理级别列表
+// @Tags         护理级别管理
+// @Accept       json
+// @Produce      json
+// @Param        skip    query     int     false  "跳过数量"  default(0)
+// @Param        limit   query     int     false  "每页数量"  default(20)
+// @Success      200     {object}  map[string]interface{}  "获取成功"
+// @Router       /care-levels [get]
 func (h *CareLevelHandler) GetList(c *gin.Context) {
 	skipStr := c.DefaultQuery("skip", "0")
 	limitStr := c.DefaultQuery("limit", "20")
@@ -120,6 +148,16 @@ func (h *CareLevelHandler) GetList(c *gin.Context) {
 }
 
 // Update 更新护理级别
+// @Summary      更新护理级别
+// @Description  更新护理级别信息
+// @Tags         护理级别管理
+// @Accept       json
+// @Produce      json
+// @Param        id       path      string            true  "护理级别ID"
+// @Param        request  body      domain.CareLevel  true  "护理级别信息"
+// @Success      200      {object}  map[string]interface{}  "更新成功"
+// @Failure      400      {object}  map[string]interface{}  "请求参数错误"
+// @Router       /care-levels/{id} [put]
 func (h *CareLevelHandler) Update(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := primitive.ObjectIDFromHex(idStr)
@@ -157,6 +195,15 @@ func (h *CareLevelHandler) Update(c *gin.Context) {
 }
 
 // Delete 删除护理级别
+// @Summary      删除护理级别
+// @Description  删除指定的护理级别
+// @Tags         护理级别管理
+// @Accept       json
+// @Produce      json
+// @Param        id   path      string  true  "护理级别ID"
+// @Success      200  {object}  map[string]interface{}  "删除成功"
+// @Failure      400  {object}  map[string]interface{}  "无效的ID"
+// @Router       /care-levels/{id} [delete]
 func (h *CareLevelHandler) Delete(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := primitive.ObjectIDFromHex(idStr)

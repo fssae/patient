@@ -4,8 +4,9 @@ import (
 	"classroom-analysis/internal/domain"
 	"classroom-analysis/internal/service"
 	"classroom-analysis/internal/web/middleware"
-	"github.com/gin-gonic/gin"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 type PatientHandler struct {
@@ -36,6 +37,16 @@ func (h *PatientHandler) RegisterRoutes(server *gin.Engine) {
 }
 
 // Login 患者登录
+// @Summary      患者登录
+// @Description  患者登录接口，使用手机号和密码登录
+// @Tags         患者端
+// @Accept       json
+// @Produce      json
+// @Param        request  body      domain.PatientLoginRequest  true  "登录信息"
+// @Success      200      {object}  map[string]interface{}   "登录成功"
+// @Failure      400      {object}  map[string]interface{}   "请求参数错误"
+// @Failure      401      {object}  map[string]interface{}   "用户名或密码错误"
+// @Router       /login [post]
 func (h *PatientHandler) Login(c *gin.Context) {
 	var req domain.PatientLoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -65,6 +76,15 @@ func (h *PatientHandler) Login(c *gin.Context) {
 }
 
 // Register 患者注册
+// @Summary      患者注册
+// @Description  患者注册接口
+// @Tags         患者端
+// @Accept       json
+// @Produce      json
+// @Param        request  body      domain.PatientRegisterRequest  true  "注册信息"
+// @Success      200      {object}  map[string]interface{}      "注册成功"
+// @Failure      400      {object}  map[string]interface{}      "请求参数错误"
+// @Router       /register [post]
 func (h *PatientHandler) Register(c *gin.Context) {
 	var req domain.PatientRegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
