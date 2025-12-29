@@ -4,6 +4,8 @@ import (
 	"classroom-analysis/internal/web"
 
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 // InitGin 初始化Gin引擎
@@ -49,6 +51,9 @@ func InitGin(
 	recordHandler.RegisterRoutes(engine)
 	// 注册服务相关路由
 	serviceHandler.RegisterRoutes(engine)
+
+	// Swagger文档路由
+	engine.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	return engine
 }

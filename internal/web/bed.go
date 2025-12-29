@@ -20,6 +20,17 @@ func NewBedHandler(svc *service.BedService) *BedHandler {
 	}
 }
 
+// RegisterRoutes 注册路由
+func (h *BedHandler) RegisterRoutes(server *gin.Engine) {
+	group := server.Group("/api/beds")
+	group.GET("", h.GetList)
+	group.GET("/:id", h.GetById)
+	group.GET("/room/:room_id", h.GetByRoomID)
+	group.POST("", h.Create)
+	group.PUT("/:id/assign", h.AssignToCustomer)
+	group.PUT("/:id/release", h.Release)
+}
+
 // Create 创建床位
 func (h *BedHandler) Create(c *gin.Context) {
 	var req domain.Bed
@@ -146,6 +157,16 @@ func (h *BedHandler) GetList(c *gin.Context) {
 }
 
 // AssignToCustomer 分配床位给客户
+// @Summary      分配床位
+// @Description  将床位分配给指定客户
+// @Tags         床位管理
+// @Accept       json
+// @Produce      json
+// @Param        id       path      string  true  "床位ID"
+// @Param        request  body      object  true  "分配信息"  example({"customer_id":"507f1f77bcf86cd799439011"})
+// @Success      200      {object}  map[string]interface{}  "分配成功"
+// @Failure      400      {object}  map[string]interface{}  "请求参数错误"
+// @Router       /beds/{id}/assign [put]
 func (h *BedHandler) AssignToCustomer(c *gin.Context) {
 	bedIDStr := c.Param("id")
 	bedID, err := primitive.ObjectIDFromHex(bedIDStr)
@@ -220,15 +241,3 @@ func (h *BedHandler) Release(c *gin.Context) {
 		"success": true,
 	})
 }
-
-// RegisterRoutes 注册路由
-func (h *BedHandler) RegisterRoutes(server *gin.Engine) {
-	group := server.Group("/api/beds")
-	group.GET("", h.GetList)
-	group.GET("/:id", h.GetById)
-	group.GET("/room/:room_id", h.GetByRoomID)
-	group.POST("", h.Create)
-	group.PUT("/:id/assign", h.AssignToCustomer)
-	group.PUT("/:id/release", h.Release)
-}
-

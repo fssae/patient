@@ -1,0 +1,461 @@
+basePath: /api
+definitions:
+  domain.Customer:
+    properties:
+      age:
+        type: integer
+      bed_id:
+        description: 关联床位
+        type: string
+      care_level_id:
+        description: 护理级别ID
+        type: string
+      check_in_date:
+        description: 入住日期
+        type: string
+      check_out_date:
+        description: 退住日期
+        type: string
+      created_at:
+        type: string
+      diet_plan_id:
+        description: 膳食计划ID
+        type: string
+      gender:
+        type: string
+      health_manager:
+        description: 健康管家姓名
+        type: string
+      health_manager_id:
+        description: 健康管家ID
+        type: string
+      id:
+        type: string
+      id_card:
+        description: 身份证号
+        type: string
+      name:
+        type: string
+      phone:
+        type: string
+      status:
+        description: 状态："入住中"/"已退住"/"外出中"
+        type: string
+      updated_at:
+        type: string
+      user_id:
+        description: 关联注册用户
+        type: string
+    required:
+    - age
+    - gender
+    - name
+    type: object
+  domain.Room:
+    properties:
+      capacity:
+        description: 床位容量
+        type: integer
+      created_at:
+        type: string
+      description:
+        type: string
+      floor:
+        description: 楼层
+        type: integer
+      id:
+        type: string
+      number:
+        description: 房间号，如 "A101"
+        type: string
+      status:
+        description: 状态："可用"/"已满"/"维护中"
+        type: string
+      type:
+        description: 房间类型："单人间"/"双人间"/"多人间"
+        type: string
+      updated_at:
+        type: string
+    required:
+    - number
+    type: object
+  domain.UserLoginRequest:
+    properties:
+      password:
+        type: string
+      phone:
+        type: string
+    required:
+    - password
+    - phone
+    type: object
+  domain.UserRegisterRequest:
+    properties:
+      age:
+        type: integer
+      gender:
+        type: string
+      name:
+        type: string
+      password:
+        type: string
+      phone:
+        type: string
+    required:
+    - age
+    - gender
+    - name
+    - password
+    - phone
+    type: object
+host: localhost:8081
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: 东软顾养中心管理系统API文档
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: 东软顾养中心 API
+  version: "1.0"
+paths:
+  /beds/{id}/assign:
+    put:
+      consumes:
+      - application/json
+      description: 将床位分配给指定客户
+      parameters:
+      - description: 床位ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 分配信息
+        in: body
+        name: request
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 分配成功
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 分配床位
+      tags:
+      - 床位管理
+  /customers:
+    get:
+      consumes:
+      - application/json
+      description: 分页获取客户列表，支持按状态筛选
+      parameters:
+      - description: 客户状态：入住中/已退住/外出中
+        in: query
+        name: status
+        type: string
+      - default: 0
+        description: 跳过数量
+        in: query
+        name: skip
+        type: integer
+      - default: 20
+        description: 每页数量
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 获取客户列表
+      tags:
+      - 客户管理
+    post:
+      consumes:
+      - application/json
+      description: 创建新的客户记录
+      parameters:
+      - description: 客户信息
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.Customer'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 创建成功
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 创建客户
+      tags:
+      - 客户管理
+  /customers/{id}:
+    get:
+      consumes:
+      - application/json
+      description: 根据ID获取客户详细信息
+      parameters:
+      - description: 客户ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 无效的ID
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: 客户不存在
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 获取客户详情
+      tags:
+      - 客户管理
+  /records/check-in:
+    post:
+      consumes:
+      - application/json
+      description: 为客户办理入住登记，自动分配床位并更新客户状态
+      parameters:
+      - description: 入住信息
+        in: body
+        name: request
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 入住登记成功
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 入住登记
+      tags:
+      - 登记管理
+  /records/check-out:
+    post:
+      consumes:
+      - application/json
+      description: 为客户办理退住登记，释放床位并更新客户状态
+      parameters:
+      - description: 退住信息
+        in: body
+        name: request
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 退住登记成功
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 退住登记
+      tags:
+      - 登记管理
+  /rooms:
+    get:
+      consumes:
+      - application/json
+      description: 分页获取房间列表，支持按状态和楼层筛选
+      parameters:
+      - description: 房间状态：可用/已满/维护中
+        in: query
+        name: status
+        type: string
+      - description: 楼层
+        in: query
+        name: floor
+        type: integer
+      - default: 0
+        description: 跳过数量
+        in: query
+        name: skip
+        type: integer
+      - default: 20
+        description: 每页数量
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 获取房间列表
+      tags:
+      - 房间管理
+    post:
+      consumes:
+      - application/json
+      description: 创建新的房间记录
+      parameters:
+      - description: 房间信息
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.Room'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 创建成功
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 创建房间
+      tags:
+      - 房间管理
+  /services/purchase:
+    post:
+      consumes:
+      - application/json
+      description: 为客户购买指定的服务项目
+      parameters:
+      - description: 购买信息
+        in: body
+        name: request
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 购买成功
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 客户购买服务
+      tags:
+      - 服务管理
+  /user/login:
+    post:
+      consumes:
+      - application/json
+      description: 用户登录接口，使用手机号和密码登录
+      parameters:
+      - description: 登录信息
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.UserLoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 登录成功，返回token和用户信息
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: 手机号或密码错误
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 用户登录
+      tags:
+      - 用户认证
+  /user/register:
+    post:
+      consumes:
+      - application/json
+      description: 用户注册接口，需要提供手机号、密码、姓名、年龄、性别
+      parameters:
+      - description: 注册信息
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.UserRegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 注册成功
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 用户注册
+      tags:
+      - 用户认证
+securityDefinitions:
+  Bearer:
+    description: Type "Bearer" followed by a space and JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

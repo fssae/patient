@@ -21,6 +21,19 @@ func NewServiceHandler(svc *service.ServiceService) *ServiceHandler {
 	}
 }
 
+// RegisterRoutes 注册路由
+func (h *ServiceHandler) RegisterRoutes(server *gin.Engine) {
+	group := server.Group("/api/services")
+	group.GET("", h.GetServiceList)
+	group.GET("/:id", h.GetServiceById)
+	group.POST("", h.CreateService)
+	group.PUT("/:id", h.UpdateService)
+	group.DELETE("/:id", h.DeleteService)
+	group.POST("/purchase", h.PurchaseService)
+	group.GET("/customer/:customer_id", h.GetCustomerServices)
+	group.PUT("/customer-service/:id/end", h.EndService)
+}
+
 // CreateService 创建服务项目
 func (h *ServiceHandler) CreateService(c *gin.Context) {
 	var req domain.Service
@@ -178,6 +191,15 @@ func (h *ServiceHandler) DeleteService(c *gin.Context) {
 }
 
 // PurchaseService 客户购买服务
+// @Summary      客户购买服务
+// @Description  为客户购买指定的服务项目
+// @Tags         服务管理
+// @Accept       json
+// @Produce      json
+// @Param        request  body      object  true  "购买信息"  example({"customer_id":"507f1f77bcf86cd799439011","service_id":"507f1f77bcf86cd799439012","start_date":"2024-01-01"})
+// @Success      200      {object}  map[string]interface{}  "购买成功"
+// @Failure      400      {object}  map[string]interface{}  "请求参数错误"
+// @Router       /services/purchase [post]
 func (h *ServiceHandler) PurchaseService(c *gin.Context) {
 	var req struct {
 		CustomerID string `json:"customer_id" binding:"required"`
@@ -311,17 +333,3 @@ func (h *ServiceHandler) EndService(c *gin.Context) {
 		"success": true,
 	})
 }
-
-// RegisterRoutes 注册路由
-func (h *ServiceHandler) RegisterRoutes(server *gin.Engine) {
-	group := server.Group("/api/services")
-	group.GET("", h.GetServiceList)
-	group.GET("/:id", h.GetServiceById)
-	group.POST("", h.CreateService)
-	group.PUT("/:id", h.UpdateService)
-	group.DELETE("/:id", h.DeleteService)
-	group.POST("/purchase", h.PurchaseService)
-	group.GET("/customer/:customer_id", h.GetCustomerServices)
-	group.PUT("/customer-service/:id/end", h.EndService)
-}
-
