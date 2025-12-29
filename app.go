@@ -27,7 +27,7 @@ func setupEnvironment() {
 	//测试
 	ioc.TimezoneInit()
 	//初始化viper
-	// ioc.InitViper()
+	ioc.InitViper()
 	//系统存活性监控
 	ioc.InitPrometheus()
 }
@@ -41,7 +41,7 @@ func (a *App) RegisterDebugRoute() {
 func (app *App) Start() error {
 	//挂载debug路由
 	app.RegisterDebugRoute()
-	ioc.StartKafkaResponseConsumer()
+	//ioc.StartKafkaResponseConsumer()
 	ioc.InitApiColl(app.server, app.mongodb, app.redis)
 	return app.server.Run(":8081")
 }

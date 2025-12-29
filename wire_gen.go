@@ -14,6 +14,10 @@ import (
 	"classroom-analysis/internal/web"
 )
 
+import (
+	_ "classroom-analysis/docs"
+)
+
 // Injectors from wire.go:
 
 func InitWebServer() *App {

@@ -64,7 +64,7 @@ var MinimalSet = wire.NewSet(
 	service.NewServiceService,
 
 	// Kafka相关
-	InitKafkaWriter,
+	//InitKafkaWriter,
 	// Web层
 	web.NewFileHandler,
 	web.NewPatientHandler,

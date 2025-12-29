@@ -25,13 +25,13 @@ func NewMinioClient() *minio.Client {
 	secretKey := viper.GetString("minio.secret_key")
 	bucketName := viper.GetString("minio.bucket")
 
-	//// 调试信息
-	//log.Printf("MinIO 配置读取结果:")
-	//log.Printf("  Address: '%s'", address)
-	//log.Printf("  Port: '%s'", port)
-	//log.Printf("  AccessKey: '%s'", accessKey)
-	//log.Printf("  SecretKey: '%s'", secretKey)
-	//log.Printf("  Bucket: '%s'", bucketName)
+	// 调试信息
+	log.Printf("MinIO 配置读取结果:")
+	log.Printf("  Address: '%s'", address)
+	log.Printf("  Port: '%s'", port)
+	log.Printf("  AccessKey: '%s'", accessKey)
+	log.Printf("  SecretKey: '%s'", secretKey)
+	log.Printf("  Bucket: '%s'", bucketName)
 
 	// 检查配置是否完整
 	if address == "" || port == "" || accessKey == "" || secretKey == "" || bucketName == "" {
