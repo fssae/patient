@@ -32,7 +32,7 @@ func HandleError(c *gin.Context, err error) bool {
 }
 func Validate(model interface{}, c *gin.Context) (map[string]interface{}, error) {
 	fieldMap := GenerateFieldMap(model)
-	fields, err := BindAndValidateFields(fieldMap)
+	fields, err := BindAndValidateFields(c, fieldMap)
 	return fields, err
 }
 func GenerateFieldMap(model interface{}) map[string]bool {

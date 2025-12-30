@@ -12,9 +12,7 @@ import (
 	"classroom-analysis/internal/repository/dao"
 	"classroom-analysis/internal/service"
 	"classroom-analysis/internal/web"
-)
 
-import (
 	_ "classroom-analysis/docs"
 )
 

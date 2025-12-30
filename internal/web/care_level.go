@@ -178,7 +178,7 @@ func (h *CareLevelHandler) Update(c *gin.Context) {
 		return
 	}
 
-	err = h.svc.Update(c.Request.Context(), id, &req)
+	err = h.svc.Update(c.Request.Context(), id, req)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code": 400,

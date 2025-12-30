@@ -95,14 +95,20 @@ func (h *HealthManagerHandler) GetById(c *gin.Context) {
 
 // GetList 获取健康管家列表
 func (h *HealthManagerHandler) GetList(c *gin.Context) {
-	status := c.Query("status")
+	var req map[string]interface{}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code": 400,
+			"msg":  "请求参数错误: " + err.Error(),
+		})
+	}
 	skipStr := c.DefaultQuery("skip", "0")
 	limitStr := c.DefaultQuery("limit", "20")
 
 	skip, _ := strconv.ParseInt(skipStr, 10, 64)
 	limit, _ := strconv.ParseInt(limitStr, 10, 64)
 
-	list, total, err := h.svc.GetList(c.Request.Context(), status, skip, limit)
+	list, total, err := h.svc.GetList(c.Request.Context(), req, skip, limit)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code": 500,

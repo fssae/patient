@@ -33,6 +33,19 @@ func (dao *HealthManagerDAO) Create(ctx context.Context, manager *domain.HealthM
 	return nil
 }
 
+// FindByPhone 根据手机号查找健康管家
+func (dao *HealthManagerDAO) FindByPhone(ctx context.Context, phone string) (*domain.HealthManager, error) {
+	var manager domain.HealthManager
+	err := dao.collection.FindOne(ctx, bson.M{"phone": phone}).Decode(&manager)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &manager, nil
+}
+
 // FindById 根据ID查找健康管家
 func (dao *HealthManagerDAO) FindById(ctx context.Context, id primitive.ObjectID) (*domain.HealthManager, error) {
 	var manager domain.HealthManager
@@ -91,4 +104,3 @@ func (dao *HealthManagerDAO) Delete(ctx context.Context, id primitive.ObjectID) 
 	_, err := dao.collection.DeleteOne(ctx, bson.M{"_id": id})
 	return err
 }
-
