@@ -23,7 +23,7 @@ func NewHealthManagerHandler(svc *service.HealthManagerService) *HealthManagerHa
 // RegisterRoutes 注册路由
 func (h *HealthManagerHandler) RegisterRoutes(server gin.IRouter) {
 	group := server.Group("/api/health-managers")
-	group.GET("", h.GetList)
+	group.POST("", h.GetList)
 	group.GET("/:id", h.GetById)
 	group.POST("/create", h.Create)
 	group.PUT("/:id", h.Update)
@@ -95,12 +95,13 @@ func (h *HealthManagerHandler) GetById(c *gin.Context) {
 
 // GetList 获取健康管家列表
 func (h *HealthManagerHandler) GetList(c *gin.Context) {
-	var req map[string]interface{}
+	var req domain.HealthManagerQuery
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code": 400,
 			"msg":  "请求参数错误: " + err.Error(),
 		})
+		return
 	}
 	skipStr := c.DefaultQuery("skip", "0")
 	limitStr := c.DefaultQuery("limit", "20")
