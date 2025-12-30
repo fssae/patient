@@ -101,6 +101,7 @@ func (h *HealthManagerHandler) GetList(c *gin.Context) {
 			"code": 400,
 			"msg":  "请求参数错误: " + err.Error(),
 		})
+		return
 	}
 	skipStr := c.DefaultQuery("skip", "0")
 	limitStr := c.DefaultQuery("limit", "20")
