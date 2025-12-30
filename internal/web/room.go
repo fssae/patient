@@ -25,7 +25,7 @@ func (h *RoomHandler) RegisterRoutes(server gin.IRouter) {
 	group := server.Group("/api/rooms")
 	group.GET("", h.GetList)
 	group.GET("/:id", h.GetById)
-	group.POST("", h.Create)
+	group.POST("/create", h.Create)
 	group.PUT("/:id", h.Update)
 	group.DELETE("/:id", h.Delete)
 }

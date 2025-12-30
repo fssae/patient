@@ -25,7 +25,7 @@ func (h *HealthManagerHandler) RegisterRoutes(server gin.IRouter) {
 	group := server.Group("/api/health-managers")
 	group.GET("", h.GetList)
 	group.GET("/:id", h.GetById)
-	group.POST("", h.Create)
+	group.POST("/create", h.Create)
 	group.PUT("/:id", h.Update)
 	group.DELETE("/:id", h.Delete)
 }

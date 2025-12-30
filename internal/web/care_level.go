@@ -25,7 +25,7 @@ func (h *CareLevelHandler) RegisterRoutes(server gin.IRouter) {
 	group := server.Group("/api/care-levels")
 	group.GET("", h.GetList)
 	group.GET("/:id", h.GetById)
-	group.POST("", h.Create)
+	group.POST("/create", h.Create)
 	group.PUT("/:id", h.Update)
 	group.DELETE("/:id", h.Delete)
 }
@@ -169,7 +169,7 @@ func (h *CareLevelHandler) Update(c *gin.Context) {
 		return
 	}
 
-	var req domain.CareLevel
+	var req map[string]interface{}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code": 400,

@@ -3,6 +3,7 @@ package dao
 import (
 	"classroom-analysis/internal/domain"
 	"context"
+	"errors"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -38,7 +39,7 @@ func (dao *CareLevelDAO) FindById(ctx context.Context, id primitive.ObjectID) (*
 	var level domain.CareLevel
 	err := dao.collection.FindOne(ctx, bson.M{"_id": id}).Decode(&level)
 	if err != nil {
-		if err == mongo.ErrNoDocuments {
+		if errors.Is(err, mongo.ErrNoDocuments) {
 			return nil, nil
 		}
 		return nil, err
@@ -76,12 +77,12 @@ func (dao *CareLevelDAO) FindList(ctx context.Context, filter bson.M, skip, limi
 }
 
 // Update 更新护理级别信息
-func (dao *CareLevelDAO) Update(ctx context.Context, level *domain.CareLevel) error {
-	level.UpdatedAt = time.Now()
+func (dao *CareLevelDAO) Update(ctx context.Context, id primitive.ObjectID, updates map[string]interface{}) error {
+	updates["updated_at"] = time.Now()
 	_, err := dao.collection.UpdateOne(
 		ctx,
-		bson.M{"_id": level.ID},
-		bson.M{"$set": level},
+		bson.M{"_id": id},
+		bson.M{"$set": updates},
 	)
 	return err
 }
@@ -91,4 +92,3 @@ func (dao *CareLevelDAO) Delete(ctx context.Context, id primitive.ObjectID) erro
 	_, err := dao.collection.DeleteOne(ctx, bson.M{"_id": id})
 	return err
 }
-

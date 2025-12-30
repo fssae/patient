@@ -11,14 +11,14 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-type ServiceService struct {
-	serviceRepo        repository.ServiceRepository
+type ServerService struct {
+	serviceRepo         repository.ServiceRepository
 	customerServiceRepo repository.CustomerServiceRepository
-	customerRepo       repository.CustomerRepository
+	customerRepo        repository.CustomerRepository
 }
 
-func NewServiceService(serviceRepo repository.ServiceRepository, customerServiceRepo repository.CustomerServiceRepository, customerRepo repository.CustomerRepository) *ServiceService {
-	return &ServiceService{
+func NewServiceService(serviceRepo repository.ServiceRepository, customerServiceRepo repository.CustomerServiceRepository, customerRepo repository.CustomerRepository) *ServerService {
+	return &ServerService{
 		serviceRepo:         serviceRepo,
 		customerServiceRepo: customerServiceRepo,
 		customerRepo:        customerRepo,
@@ -26,7 +26,7 @@ func NewServiceService(serviceRepo repository.ServiceRepository, customerService
 }
 
 // CreateService 创建服务项目
-func (s *ServiceService) CreateService(ctx context.Context, req *domain.Service) error {
+func (s *ServerService) CreateService(ctx context.Context, req *domain.Service) error {
 	service := &domain.Service{
 		Name:        req.Name,
 		Description: req.Description,
@@ -34,19 +34,19 @@ func (s *ServiceService) CreateService(ctx context.Context, req *domain.Service)
 		Price:       req.Price,
 		Unit:        req.Unit,
 		Status:      "启用",
-		CreatedAt:    time.Now(),
-		UpdatedAt:    time.Now(),
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
 	}
 	return s.serviceRepo.Create(ctx, service)
 }
 
 // GetServiceById 根据ID获取服务项目
-func (s *ServiceService) GetServiceById(ctx context.Context, id primitive.ObjectID) (*domain.Service, error) {
+func (s *ServerService) GetServiceById(ctx context.Context, id primitive.ObjectID) (*domain.Service, error) {
 	return s.serviceRepo.FindById(ctx, id)
 }
 
 // GetServiceList 获取服务项目列表
-func (s *ServiceService) GetServiceList(ctx context.Context, category, status string, skip, limit int64) ([]*domain.Service, int64, error) {
+func (s *ServerService) GetServiceList(ctx context.Context, category, status string, skip, limit int64) ([]*domain.Service, int64, error) {
 	filter := bson.M{}
 	if category != "" {
 		filter["category"] = category
@@ -58,7 +58,7 @@ func (s *ServiceService) GetServiceList(ctx context.Context, category, status st
 }
 
 // UpdateService 更新服务项目
-func (s *ServiceService) UpdateService(ctx context.Context, id primitive.ObjectID, req *domain.Service) error {
+func (s *ServerService) UpdateService(ctx context.Context, id primitive.ObjectID, req *domain.Service) error {
 	service, err := s.serviceRepo.FindById(ctx, id)
 	if err != nil {
 		return err
@@ -79,12 +79,12 @@ func (s *ServiceService) UpdateService(ctx context.Context, id primitive.ObjectI
 }
 
 // DeleteService 删除服务项目
-func (s *ServiceService) DeleteService(ctx context.Context, id primitive.ObjectID) error {
+func (s *ServerService) DeleteService(ctx context.Context, id primitive.ObjectID) error {
 	return s.serviceRepo.Delete(ctx, id)
 }
 
 // PurchaseService 客户购买服务
-func (s *ServiceService) PurchaseService(ctx context.Context, customerID, serviceID primitive.ObjectID, startDate time.Time) error {
+func (s *ServerService) PurchaseService(ctx context.Context, customerID, serviceID primitive.ObjectID, startDate time.Time) error {
 	// 验证客户是否存在
 	customer, err := s.customerRepo.FindById(ctx, customerID)
 	if err != nil {
@@ -117,12 +117,12 @@ func (s *ServiceService) PurchaseService(ctx context.Context, customerID, servic
 }
 
 // GetCustomerServices 获取客户购买的服务列表
-func (s *ServiceService) GetCustomerServices(ctx context.Context, customerID primitive.ObjectID) ([]*domain.CustomerService, error) {
+func (s *ServerService) GetCustomerServices(ctx context.Context, customerID primitive.ObjectID) ([]*domain.CustomerService, error) {
 	return s.customerServiceRepo.FindByCustomerID(ctx, customerID)
 }
 
 // EndService 结束客户服务
-func (s *ServiceService) EndService(ctx context.Context, customerServiceID primitive.ObjectID, endDate time.Time) error {
+func (s *ServerService) EndService(ctx context.Context, customerServiceID primitive.ObjectID, endDate time.Time) error {
 	cs, err := s.customerServiceRepo.FindById(ctx, customerServiceID)
 	if err != nil {
 		return err
@@ -137,4 +137,3 @@ func (s *ServiceService) EndService(ctx context.Context, customerServiceID primi
 
 	return s.customerServiceRepo.Update(ctx, cs)
 }
-

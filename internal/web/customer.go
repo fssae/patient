@@ -3,6 +3,7 @@ package web
 import (
 	"classroom-analysis/internal/domain"
 	"classroom-analysis/internal/service"
+	"classroom-analysis/internal/util"
 	"net/http"
 	"strconv"
 
@@ -23,10 +24,10 @@ func NewCustomerHandler(svc *service.CustomerService) *CustomerHandler {
 // RegisterRoutes 注册路由
 func (h *CustomerHandler) RegisterRoutes(server gin.IRouter) {
 	group := server.Group("/api/customers")
-	group.GET("", h.GetList)
+	group.POST("", h.GetList)
 	group.GET("/:id", h.GetById)
-	group.POST("", h.Create)
-	group.PUT("/:id", h.Update)
+	group.POST("/create", h.Create)
+	group.POST("/:id", h.Update)
 	group.PUT("/:id/health-manager", h.SetHealthManager)
 	group.PUT("/:id/bed", h.SetBed)
 	group.PUT("/:id/diet-plan", h.SetDietPlan)
@@ -128,14 +129,20 @@ func (h *CustomerHandler) GetById(c *gin.Context) {
 // @Success      200     {object}  map[string]interface{}  "获取成功"
 // @Router       /customers [get]
 func (h *CustomerHandler) GetList(c *gin.Context) {
-	status := c.Query("status")
+	var req map[string]interface{}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code": 400,
+			"msg":  "请求参数错误: " + err.Error(),
+		})
+	}
 	skipStr := c.DefaultQuery("skip", "0")
 	limitStr := c.DefaultQuery("limit", "20")
 
 	skip, _ := strconv.ParseInt(skipStr, 10, 64)
 	limit, _ := strconv.ParseInt(limitStr, 10, 64)
 
-	list, total, err := h.svc.GetList(c.Request.Context(), status, skip, limit)
+	list, total, err := h.svc.GetList(c.Request.Context(), req, skip, limit)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code": 500,
@@ -165,16 +172,16 @@ func (h *CustomerHandler) Update(c *gin.Context) {
 		return
 	}
 
-	var req domain.Customer
-	if err := c.ShouldBindJSON(&req); err != nil {
+	//根据结构体获取业务字段,并进行绑定和验证
+	req, err := util.Validate(&domain.Customer{}, c)
+	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code": 400,
-			"msg":  "请求参数错误: " + err.Error(),
+			"msg":  err.Error(),
 		})
 		return
 	}
-
-	err = h.svc.Update(c.Request.Context(), id, &req)
+	err = h.svc.Update(c.Request.Context(), id, req)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code": 400,

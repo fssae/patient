@@ -12,10 +12,10 @@ import (
 )
 
 type ServiceHandler struct {
-	svc *service.ServiceService
+	svc *service.ServerService
 }
 
-func NewServiceHandler(svc *service.ServiceService) *ServiceHandler {
+func NewServiceHandler(svc *service.ServerService) *ServiceHandler {
 	return &ServiceHandler{
 		svc: svc,
 	}

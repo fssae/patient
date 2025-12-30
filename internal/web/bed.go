@@ -29,7 +29,7 @@ func (h *BedHandler) RegisterRoutes(server gin.IRouter) {
 	group.GET("/options/rooms", h.GetRoomOptions)
 	group.GET("/:id", h.GetById)
 	group.GET("/room/:room_id", h.GetByRoomID)
-	group.POST("", h.Create)
+	group.POST("/create", h.Create)
 	group.PUT("/:id", h.Update)
 	group.PUT("/:id/release", h.Release)
 	group.DELETE("/:id", h.DeleteBed)

@@ -140,9 +140,12 @@ func (s *RecordService) CheckOut(ctx context.Context, customerID primitive.Objec
 	}
 
 	// 更新客户状态
-	customer.Status = "已退住"
-	customer.CheckOutDate = time.Now()
-	err = s.customerRepo.Update(ctx, customer)
+	var updates = map[string]interface{}{
+		"status":         "退住",
+		"updated_at":     time.Now(),
+		"check_out_date": time.Now(),
+	}
+	err = s.customerRepo.Update(ctx, customerID, updates)
 	if err != nil {
 		return err
 	}
@@ -176,8 +179,12 @@ func (s *RecordService) Outgoing(ctx context.Context, customerID primitive.Objec
 	}
 
 	// 更新客户状态
-	customer.Status = "外出中"
-	err = s.customerRepo.Update(ctx, customer)
+	var updates = map[string]interface{}{
+		"status":       "外出中",
+		"updated_at":   time.Now(),
+		"check_out_at": time.Now(),
+	}
+	err = s.customerRepo.Update(ctx, customerID, updates)
 	if err != nil {
 		return err
 	}
@@ -210,8 +217,12 @@ func (s *RecordService) Return(ctx context.Context, customerID primitive.ObjectI
 	}
 
 	// 更新客户状态
-	customer.Status = "入住中"
-	err = s.customerRepo.Update(ctx, customer)
+	var updates = map[string]interface{}{
+		"status":       "入住中",
+		"updated_at":   time.Now(),
+		"check_out_at": time.Time{},
+	}
+	err = s.customerRepo.Update(ctx, customerID, updates)
 	if err != nil {
 		return err
 	}

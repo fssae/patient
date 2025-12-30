@@ -13,7 +13,7 @@ type CareLevelRepository interface {
 	Create(ctx context.Context, level *domain.CareLevel) error
 	FindById(ctx context.Context, id primitive.ObjectID) (*domain.CareLevel, error)
 	FindList(ctx context.Context, filter bson.M, skip, limit int64) ([]*domain.CareLevel, int64, error)
-	Update(ctx context.Context, level *domain.CareLevel) error
+	Update(ctx context.Context, id primitive.ObjectID, updates map[string]interface{}) error
 	Delete(ctx context.Context, id primitive.ObjectID) error
 }
 
@@ -39,11 +39,10 @@ func (r *careLevelRepository) FindList(ctx context.Context, filter bson.M, skip,
 	return r.dao.FindList(ctx, filter, skip, limit)
 }
 
-func (r *careLevelRepository) Update(ctx context.Context, level *domain.CareLevel) error {
-	return r.dao.Update(ctx, level)
+func (r *careLevelRepository) Update(ctx context.Context, id primitive.ObjectID, updates map[string]interface{}) error {
+	return r.dao.Update(ctx, id, updates)
 }
 
 func (r *careLevelRepository) Delete(ctx context.Context, id primitive.ObjectID) error {
 	return r.dao.Delete(ctx, id)
 }
-

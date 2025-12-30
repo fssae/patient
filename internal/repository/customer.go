@@ -14,7 +14,7 @@ type CustomerRepository interface {
 	FindById(ctx context.Context, id primitive.ObjectID) (*domain.Customer, error)
 	FindByUserID(ctx context.Context, userID primitive.ObjectID) (*domain.Customer, error)
 	FindList(ctx context.Context, filter bson.M, skip, limit int64) ([]*domain.Customer, int64, error)
-	Update(ctx context.Context, customer *domain.Customer) error
+	Update(ctx context.Context, id primitive.ObjectID, updates map[string]interface{}) error
 	Delete(ctx context.Context, id primitive.ObjectID) error
 }
 
@@ -44,11 +44,10 @@ func (r *customerRepository) FindList(ctx context.Context, filter bson.M, skip, 
 	return r.dao.FindList(ctx, filter, skip, limit)
 }
 
-func (r *customerRepository) Update(ctx context.Context, customer *domain.Customer) error {
-	return r.dao.Update(ctx, customer)
+func (r *customerRepository) Update(ctx context.Context, id primitive.ObjectID, updates map[string]interface{}) error {
+	return r.dao.Update(ctx, id, updates)
 }
 
 func (r *customerRepository) Delete(ctx context.Context, id primitive.ObjectID) error {
 	return r.dao.Delete(ctx, id)
 }
-

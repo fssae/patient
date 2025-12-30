@@ -6,3 +6,8 @@ type ImageMessage struct {
 	Id  primitive.ObjectID `json:"_id" bson:"_id"`
 	Url string             `bson:"url" json:"url"`
 }
+
+type VideoMessage struct {
+	Id  primitive.ObjectID `json:"_id" bson:"_id"`
+	Url string             `bson:"url" json:"url"`
+}

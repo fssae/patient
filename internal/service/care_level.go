@@ -47,7 +47,7 @@ func (s *CareLevelService) GetList(ctx context.Context, skip, limit int64) ([]*d
 }
 
 // Update 更新护理级别信息
-func (s *CareLevelService) Update(ctx context.Context, id primitive.ObjectID, req *domain.CareLevel) error {
+func (s *CareLevelService) Update(ctx context.Context, id primitive.ObjectID, updates map[string]interface{}) error {
 	level, err := s.repo.FindById(ctx, id)
 	if err != nil {
 		return err
@@ -55,19 +55,10 @@ func (s *CareLevelService) Update(ctx context.Context, id primitive.ObjectID, re
 	if level == nil {
 		return errors.New("护理级别不存在")
 	}
-
-	level.Name = req.Name
-	level.Level = req.Level
-	level.Description = req.Description
-	level.Content = req.Content
-	level.Price = req.Price
-	level.UpdatedAt = time.Now()
-
-	return s.repo.Update(ctx, level)
+	return s.repo.Update(ctx, id, updates)
 }
 
 // Delete 删除护理级别
 func (s *CareLevelService) Delete(ctx context.Context, id primitive.ObjectID) error {
 	return s.repo.Delete(ctx, id)
 }
-

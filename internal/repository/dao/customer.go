@@ -89,12 +89,12 @@ func (dao *CustomerDAO) FindList(ctx context.Context, filter bson.M, skip, limit
 }
 
 // Update 更新客户信息
-func (dao *CustomerDAO) Update(ctx context.Context, customer *domain.Customer) error {
-	customer.UpdatedAt = time.Now()
+func (dao *CustomerDAO) Update(ctx context.Context, id primitive.ObjectID, updates map[string]interface{}) error {
+	updates["updated_at"] = time.Now()
 	_, err := dao.collection.UpdateOne(
 		ctx,
-		bson.M{"_id": customer.ID},
-		bson.M{"$set": customer},
+		bson.M{"_id": id},
+		bson.M{"$set": updates},
 	)
 	return err
 }
@@ -104,4 +104,3 @@ func (dao *CustomerDAO) Delete(ctx context.Context, id primitive.ObjectID) error
 	_, err := dao.collection.DeleteOne(ctx, bson.M{"_id": id})
 	return err
 }
-
