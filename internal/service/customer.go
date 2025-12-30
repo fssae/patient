@@ -58,34 +58,61 @@ func (s *CustomerService) GetById(ctx context.Context, id primitive.ObjectID) (*
 }
 
 // GetList 获取客户列表
-func (s *CustomerService) GetList(ctx context.Context, query map[string]interface{}, skip, limit int64) ([]*domain.Customer, int64, error) {
+func (s *CustomerService) GetList(ctx context.Context, query domain.CustomerQuery, skip, limit int64) ([]*domain.Customer, int64, error) {
 	filter := bson.M{}
-	for k, v := range query {
-		if v == "" || v == nil {
-			continue
-		}
 
-		switch k {
-		case "id":
-			if str, ok := v.(string); ok {
-				if oid, err := primitive.ObjectIDFromHex(str); err == nil {
-					filter["_id"] = oid
-				}
+	// 精确匹配
+	if query.Status != "" {
+		filter["status"] = query.Status
+	}
+
+	// ObjectID 转换处理
+	idFields := map[string]string{
+		"bed_id":            query.BedID,
+		"care_level_id":     query.CareLevelID,
+		"diet_plan_id":      query.DietPlanID,
+		"health_manager_id": query.HealthManagerID,
+	}
+
+	for field, val := range idFields {
+		if val != "" {
+			if oid, err := primitive.ObjectIDFromHex(val); err == nil {
+				filter[field] = oid
 			}
-		case "user_id", "bed_id", "diet_plan_id", "care_level_id", "health_manager_id":
-			if str, ok := v.(string); ok {
-				if oid, err := primitive.ObjectIDFromHex(str); err == nil {
-					filter[k] = oid
-				}
-			}
-		case "name", "phone", "id_card": // 模糊查询
-			if str, ok := v.(string); ok {
-				filter[k] = primitive.Regex{Pattern: str, Options: "i"}
-			}
-		default:
-			filter[k] = v
 		}
 	}
+
+	// 模糊查询
+	if query.Name != "" {
+		filter["name"] = primitive.Regex{Pattern: query.Name, Options: "i"}
+	}
+	if query.Phone != "" {
+		filter["phone"] = primitive.Regex{Pattern: query.Phone, Options: "i"}
+	}
+	if query.IDCard != "" {
+		filter["id_card"] = primitive.Regex{Pattern: query.IDCard, Options: "i"}
+	}
+
+	// 数值范围查询
+	if query.MinAge > 0 || query.MaxAge > 0 {
+		ageFilter := bson.M{}
+		if query.MinAge > 0 {
+			ageFilter["$gte"] = query.MinAge
+		}
+		if query.MaxAge > 0 {
+			ageFilter["$lte"] = query.MaxAge
+		}
+		filter["age"] = ageFilter
+	}
+
+	// 复合搜索逻辑
+	if query.SearchKey != "" {
+		filter["$or"] = []bson.M{
+			{"name": primitive.Regex{Pattern: query.SearchKey, Options: "i"}},
+			{"phone": primitive.Regex{Pattern: query.SearchKey, Options: "i"}},
+		}
+	}
+
 	return s.customerRepo.FindList(ctx, filter, skip, limit)
 }
 
