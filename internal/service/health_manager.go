@@ -51,38 +51,36 @@ func (s *HealthManagerService) GetById(ctx context.Context, id primitive.ObjectI
 }
 
 // GetList 获取健康管家列表
-func (s *HealthManagerService) GetList(ctx context.Context, query map[string]interface{}, skip, limit int64) ([]*domain.HealthManager, int64, error) {
-	filter := bson.M{}
-	for k, v := range query {
-		if v == "" || v == nil {
-			continue
-		}
-		switch k {
-		case "id":
-			if str, ok := v.(string); ok {
-				if oid, err := primitive.ObjectIDFromHex(str); err == nil {
-					filter["_id"] = oid
-				}
-			}
-		case "name", "phone", "id_card", "email", "specialty", "status": // 模糊查询
-			if str, ok := v.(string); ok {
-				filter[k] = primitive.Regex{Pattern: str, Options: "i"}
-			}
-		case "created_at", "updated_at":
-			if dateStr, ok := v.(string); ok {
-				if date, err := time.Parse("2006-01-02", dateStr); err == nil {
-					startOfDay := time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, time.UTC)
-					endOfDay := time.Date(date.Year(), date.Month(), date.Day(), 23, 59, 59, int(time.Second-time.Nanosecond), time.UTC)
-					filter[k] = bson.M{
-						"$gte": startOfDay,
-						"$lte": endOfDay,
-					}
-				}
-			}
-		default:
-			filter[k] = v
+func (s *HealthManagerService) GetList(ctx context.Context, query domain.HealthManagerQuery, skip, limit int64) ([]*domain.HealthManager, int64, error) {
+	// 构建查询条件
+	filter := bson.M{"status": "在职"} // 默认只查询在职人员
+
+	// 姓名模糊查询
+	if query.Name != "" {
+		filter["name"] = bson.M{
+			"$regex":   query.Name,
+			"$options": "i",
 		}
 	}
+
+	// 手机号模糊查询
+	if query.Phone != "" {
+		filter["phone"] = query.Phone
+	}
+
+	// 邮箱模糊查询
+	if query.Email != "" {
+		filter["email"] = query.Email
+	}
+
+	// 专业模糊查询
+	if query.Specialty != "" {
+		filter["specialty"] = bson.M{
+			"$regex":   query.Specialty,
+			"$options": "i",
+		}
+	}
+
 	return s.repo.FindList(ctx, filter, skip, limit)
 }
 

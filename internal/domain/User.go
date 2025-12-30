@@ -267,3 +267,10 @@ type HealthManager struct {
 	CreatedAt time.Time          `json:"created_at" bson:"created_at"`
 	UpdatedAt time.Time          `json:"updated_at" bson:"updated_at"`
 }
+
+type HealthManagerQuery struct {
+	Name      string `json:"name"`
+	Phone     string `json:"phone"`
+	Email     string `json:"email"`
+	Specialty string `json:"specialty"`
+}
