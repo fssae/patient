@@ -1,10 +1,12 @@
 package ioc
 
 import (
+	"classroom-analysis/internal/mq"
 	"classroom-analysis/internal/repository"
 	"classroom-analysis/internal/repository/dao"
 	"classroom-analysis/internal/service"
 	"classroom-analysis/internal/web"
+	"classroom-analysis/internal/ws"
 
 	"github.com/google/wire"
 )
@@ -65,6 +67,12 @@ var MinimalSet = wire.NewSet(
 	service.NewRecordService,
 	service.NewServiceService,
 	service.NewCareRecordService,
+	service.NewAlertService,
+
+	// MQ
+	mq.NewAlertConsumer,
+	// WS
+	ws.NewWebSocketManager,
 
 	// Kafka相关
 	//InitKafkaWriter,

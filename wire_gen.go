@@ -8,11 +8,15 @@ package main
 
 import (
 	"classroom-analysis/internal/ioc"
+	"classroom-analysis/internal/mq"
 	"classroom-analysis/internal/repository"
 	"classroom-analysis/internal/repository/dao"
 	"classroom-analysis/internal/service"
 	"classroom-analysis/internal/web"
+	"classroom-analysis/internal/ws"
+)
 
+import (
 	_ "classroom-analysis/docs"
 )
 
@@ -69,22 +73,26 @@ func InitWebServer() *App {
 	serviceRepository := repository.NewServiceRepository(serviceDAO)
 	customerServiceDAO := dao.NewCustomerServiceDAO(database)
 	customerServiceRepository := repository.NewCustomerServiceRepository(customerServiceDAO)
-	serviceService := service.NewServiceService(serviceRepository, customerServiceRepository, customerRepository)
-	serviceHandler := web.NewServiceHandler(serviceService)
+	serverService := service.NewServiceService(serviceRepository, customerServiceRepository, customerRepository)
+	serviceHandler := web.NewServiceHandler(serverService)
 	careRecordDAO := dao.NewCareRecordDAO(database)
 	careRecordRepository := repository.NewCareRecordRepository(careRecordDAO)
 	careRecordService := service.NewCareRecordService(careRecordRepository)
 	careRecordHandler := web.NewCareRecordHandler(careRecordService)
-	engine := ioc.InitGin(v, patientHandler, fileHandler, userHandler, healthManagerHandler, roomHandler, bedHandler, careLevelHandler, dietPlanHandler, customerHandler, recordHandler, serviceHandler, careRecordHandler)
+	webSocketManager := ws.NewWebSocketManager()
+	engine := ioc.InitGin(v, patientHandler, fileHandler, userHandler, healthManagerHandler, roomHandler, bedHandler, careLevelHandler, dietPlanHandler, customerHandler, recordHandler, serviceHandler, careRecordHandler, webSocketManager)
 	redisClient := ioc.InitRedis()
 	config := ioc.InitViper()
+	alertConsumer := mq.NewAlertConsumer()
+	alertService := service.NewAlertService(alertConsumer, webSocketManager)
 	app := &App{
-		server:      engine,
-		mongodb:     client,
-		redis:       redisClient,
-		minio:       minioClient,
-		config:      config,
-		FileHandler: fileHandler,
+		server:       engine,
+		mongodb:      client,
+		redis:        redisClient,
+		minio:        minioClient,
+		config:       config,
+		FileHandler:  fileHandler,
+		AlertService: alertService,
 	}
 	return app
 }

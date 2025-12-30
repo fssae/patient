@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"classroom-analysis/internal/domain"
+
 	"github.com/IBM/sarama"
 	"github.com/spf13/viper"
 )

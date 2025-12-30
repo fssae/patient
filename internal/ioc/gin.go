@@ -2,6 +2,7 @@ package ioc
 
 import (
 	"classroom-analysis/internal/web"
+	"classroom-analysis/internal/ws"
 
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
@@ -23,6 +24,7 @@ func InitGin(
 	recordHandler *web.RecordHandler,
 	serviceHandler *web.ServiceHandler,
 	careRecordHandler *web.CareRecordHandler,
+	wsMgr *ws.WebSocketManager,
 ) *gin.Engine {
 	engine := gin.Default()
 	// 1. 注册基础全局中间件（不包含 JWT）
@@ -61,6 +63,9 @@ func InitGin(
 	}
 	// Swagger文档路由
 	engine.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
+	// WebSocket 路由
+	engine.GET("/api/ws/alerts", wsMgr.Handler)
 
 	return engine
 }

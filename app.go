@@ -2,6 +2,7 @@ package main
 
 import (
 	"classroom-analysis/internal/ioc"
+	"classroom-analysis/internal/service"
 	"classroom-analysis/internal/web"
 	"log"
 
@@ -20,7 +21,8 @@ type App struct {
 	minio   *minio.Client
 	config  *ioc.Config
 
-	FileHandler *web.FileHandler
+	FileHandler  *web.FileHandler
+	AlertService *service.AlertService
 }
 
 func setupEnvironment() {
@@ -43,6 +45,10 @@ func (app *App) Start() error {
 	app.RegisterDebugRoute()
 	//ioc.StartKafkaResponseConsumer()
 	ioc.InitApiColl(app.server, app.mongodb, app.redis)
+
+	// 启动报警服务
+	app.AlertService.Start()
+
 	return app.server.Run(":8081")
 }
 func startCronJobs() {

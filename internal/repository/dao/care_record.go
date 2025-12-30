@@ -21,9 +21,14 @@ func NewCareRecordDAO(db *mongo.Database) *CareRecordDAO {
 	}
 }
 
-func (dao *CareRecordDAO) Create(ctx context.Context, record *domain.CareRecord) error {
-	record.CreatedAt = time.Now()
-	record.UpdatedAt = time.Now()
+func (dao *CareRecordDAO) Create(ctx context.Context, record *domain.CareRecords) error {
+	now := time.Now()
+	record.UpdatedAt = now
+	for i := range record.Records {
+		if record.Records[i].CreatedAt.IsZero() {
+			record.Records[i].CreatedAt = now
+		}
+	}
 	result, err := dao.collection.InsertOne(ctx, record)
 	if err != nil {
 		return err
@@ -32,8 +37,8 @@ func (dao *CareRecordDAO) Create(ctx context.Context, record *domain.CareRecord)
 	return nil
 }
 
-func (dao *CareRecordDAO) FindById(ctx context.Context, id primitive.ObjectID) (*domain.CareRecord, error) {
-	var record domain.CareRecord
+func (dao *CareRecordDAO) FindById(ctx context.Context, id primitive.ObjectID) (*domain.CareRecords, error) {
+	var record domain.CareRecords
 	err := dao.collection.FindOne(ctx, bson.M{"_id": id}).Decode(&record)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
@@ -44,7 +49,7 @@ func (dao *CareRecordDAO) FindById(ctx context.Context, id primitive.ObjectID) (
 	return &record, nil
 }
 
-func (dao *CareRecordDAO) FindList(ctx context.Context, filter bson.M, skip, limit int64) ([]*domain.CareRecord, int64, error) {
+func (dao *CareRecordDAO) FindList(ctx context.Context, filter bson.M, skip, limit int64) ([]*domain.CareRecords, int64, error) {
 	opts := options.Find()
 	if limit > 0 {
 		opts.SetLimit(limit)
@@ -52,7 +57,7 @@ func (dao *CareRecordDAO) FindList(ctx context.Context, filter bson.M, skip, lim
 	if skip > 0 {
 		opts.SetSkip(skip)
 	}
-	opts.SetSort(bson.D{{Key: "care_time", Value: -1}})
+	opts.SetSort(bson.D{{Key: "updated_at", Value: -1}})
 
 	cursor, err := dao.collection.Find(ctx, filter, opts)
 	if err != nil {
@@ -60,7 +65,7 @@ func (dao *CareRecordDAO) FindList(ctx context.Context, filter bson.M, skip, lim
 	}
 	defer cursor.Close(ctx)
 
-	var results []*domain.CareRecord
+	var results []*domain.CareRecords
 	if err = cursor.All(ctx, &results); err != nil {
 		return nil, 0, err
 	}
@@ -85,5 +90,20 @@ func (dao *CareRecordDAO) Update(ctx context.Context, id primitive.ObjectID, upd
 
 func (dao *CareRecordDAO) Delete(ctx context.Context, id primitive.ObjectID) error {
 	_, err := dao.collection.DeleteOne(ctx, bson.M{"_id": id})
+	return err
+}
+
+func (dao *CareRecordDAO) AppendRecord(ctx context.Context, id primitive.ObjectID, item domain.RecordItems) error {
+	if item.CreatedAt.IsZero() {
+		item.CreatedAt = time.Now()
+	}
+	_, err := dao.collection.UpdateOne(
+		ctx,
+		bson.M{"_id": id},
+		bson.M{
+			"$push": bson.M{"records": item},
+			"$set":  bson.M{"updated_at": time.Now()},
+		},
+	)
 	return err
 }

@@ -19,15 +19,15 @@ func NewCareRecordService(repo repository.CareRecordRepository) *CareRecordServi
 	}
 }
 
-func (s *CareRecordService) Create(ctx context.Context, record *domain.CareRecord) error {
+func (s *CareRecordService) Create(ctx context.Context, record *domain.CareRecords) error {
 	return s.repo.Create(ctx, record)
 }
 
-func (s *CareRecordService) GetById(ctx context.Context, id primitive.ObjectID) (*domain.CareRecord, error) {
+func (s *CareRecordService) GetById(ctx context.Context, id primitive.ObjectID) (*domain.CareRecords, error) {
 	return s.repo.FindById(ctx, id)
 }
 
-func (s *CareRecordService) GetList(ctx context.Context, customerName string, skip, limit int64) ([]*domain.CareRecord, int64, error) {
+func (s *CareRecordService) GetList(ctx context.Context, customerName string, skip, limit int64) ([]*domain.CareRecords, int64, error) {
 	filter := bson.M{}
 	if customerName != "" {
 		filter["customer_name"] = primitive.Regex{Pattern: customerName, Options: "i"}
@@ -41,4 +41,8 @@ func (s *CareRecordService) Update(ctx context.Context, id primitive.ObjectID, u
 
 func (s *CareRecordService) Delete(ctx context.Context, id primitive.ObjectID) error {
 	return s.repo.Delete(ctx, id)
+}
+
+func (s *CareRecordService) AddRecord(ctx context.Context, id primitive.ObjectID, item domain.RecordItems) error {
+	return s.repo.AppendRecord(ctx, id, item)
 }

@@ -26,13 +26,14 @@ func (h *CareRecordHandler) RegisterRoutes(server gin.IRouter) {
 	group.GET("", h.GetList)
 	group.GET("/:id", h.GetById)
 	group.POST("", h.Create)
+	group.POST("/:id/records", h.AddRecord) // 追加单条护理记录
 	group.PUT("/:id", h.Update)
 	group.DELETE("/:id", h.Delete)
 }
 
 // Create 创建护理记录
 func (h *CareRecordHandler) Create(c *gin.Context) {
-	var req domain.CareRecord
+	var req domain.CareRecords
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code": 400,
@@ -133,7 +134,7 @@ func (h *CareRecordHandler) Update(c *gin.Context) {
 	}
 
 	// 使用 util.Validate 进行部分更新字段绑定（参考 CustomerHandler）
-	updates, err := util.Validate(domain.CareRecord{}, c)
+	updates, err := util.Validate(domain.CareRecords{}, c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code": 400,
@@ -182,6 +183,43 @@ func (h *CareRecordHandler) Delete(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"code":    200,
 		"msg":     "删除成功",
+		"success": true,
+	})
+}
+
+// AddRecord 追加护理记录子项
+func (h *CareRecordHandler) AddRecord(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := primitive.ObjectIDFromHex(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code": 400,
+			"msg":  "无效的ID",
+		})
+		return
+	}
+
+	var req domain.RecordItems
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code": 400,
+			"msg":  "请求参数错误: " + err.Error(),
+		})
+		return
+	}
+
+	err = h.svc.AddRecord(c.Request.Context(), id, req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code": 500,
+			"msg":  err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":    200,
+		"msg":     "追加成功",
 		"success": true,
 	})
 }
