@@ -22,6 +22,7 @@ func InitGin(
 	customerHandler *web.CustomerHandler,
 	recordHandler *web.RecordHandler,
 	serviceHandler *web.ServiceHandler,
+	careRecordHandler *web.CareRecordHandler,
 ) *gin.Engine {
 	engine := gin.Default()
 	// 1. 注册基础全局中间件（不包含 JWT）
@@ -55,6 +56,8 @@ func InitGin(
 		recordHandler.RegisterRoutes(authGroup)
 		// 注册服务相关路由
 		serviceHandler.RegisterRoutes(authGroup)
+		// 注册护理记录相关路由
+		careRecordHandler.RegisterRoutes(authGroup)
 	}
 	// Swagger文档路由
 	engine.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))

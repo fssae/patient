@@ -33,6 +33,7 @@ var MinimalSet = wire.NewSet(
 	dao.NewRecordDAO,
 	dao.NewServiceDAO,
 	dao.NewCustomerServiceDAO,
+	dao.NewCareRecordDAO,
 
 	// Repository层
 
@@ -49,6 +50,7 @@ var MinimalSet = wire.NewSet(
 	repository.NewRecordRepository,
 	repository.NewServiceRepository,
 	repository.NewCustomerServiceRepository,
+	repository.NewCareRecordRepository,
 
 	// Service层
 	service.NewFileService,
@@ -62,6 +64,7 @@ var MinimalSet = wire.NewSet(
 	service.NewCustomerService,
 	service.NewRecordService,
 	service.NewServiceService,
+	service.NewCareRecordService,
 
 	// Kafka相关
 	//InitKafkaWriter,
@@ -77,6 +80,7 @@ var MinimalSet = wire.NewSet(
 	web.NewCustomerHandler,
 	web.NewRecordHandler,
 	web.NewServiceHandler,
+	web.NewCareRecordHandler,
 
 	// Gin引擎
 	InitGin,

@@ -12,9 +12,7 @@ import (
 	"classroom-analysis/internal/repository/dao"
 	"classroom-analysis/internal/service"
 	"classroom-analysis/internal/web"
-)
 
-import (
 	_ "classroom-analysis/docs"
 )
 
@@ -73,7 +71,11 @@ func InitWebServer() *App {
 	customerServiceRepository := repository.NewCustomerServiceRepository(customerServiceDAO)
 	serviceService := service.NewServiceService(serviceRepository, customerServiceRepository, customerRepository)
 	serviceHandler := web.NewServiceHandler(serviceService)
-	engine := ioc.InitGin(v, patientHandler, fileHandler, userHandler, healthManagerHandler, roomHandler, bedHandler, careLevelHandler, dietPlanHandler, customerHandler, recordHandler, serviceHandler)
+	careRecordDAO := dao.NewCareRecordDAO(database)
+	careRecordRepository := repository.NewCareRecordRepository(careRecordDAO)
+	careRecordService := service.NewCareRecordService(careRecordRepository)
+	careRecordHandler := web.NewCareRecordHandler(careRecordService)
+	engine := ioc.InitGin(v, patientHandler, fileHandler, userHandler, healthManagerHandler, roomHandler, bedHandler, careLevelHandler, dietPlanHandler, customerHandler, recordHandler, serviceHandler, careRecordHandler)
 	redisClient := ioc.InitRedis()
 	config := ioc.InitViper()
 	app := &App{

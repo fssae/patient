@@ -3,6 +3,7 @@ package web
 import (
 	"classroom-analysis/internal/domain"
 	"classroom-analysis/internal/service"
+	"classroom-analysis/internal/util"
 	"net/http"
 	"strconv"
 
@@ -24,6 +25,7 @@ func NewCareLevelHandler(svc *service.CareLevelService) *CareLevelHandler {
 func (h *CareLevelHandler) RegisterRoutes(server gin.IRouter) {
 	group := server.Group("/api/care-levels")
 	group.GET("", h.GetList)
+	group.GET("/menu", h.GetMenu)
 	group.GET("/:id", h.GetById)
 	group.POST("/create", h.Create)
 	group.PUT("/:id", h.Update)
@@ -125,11 +127,12 @@ func (h *CareLevelHandler) GetById(c *gin.Context) {
 func (h *CareLevelHandler) GetList(c *gin.Context) {
 	skipStr := c.DefaultQuery("skip", "0")
 	limitStr := c.DefaultQuery("limit", "20")
+	level, _ := strconv.ParseInt(c.DefaultQuery("level", "0"), 10, 64)
 
 	skip, _ := strconv.ParseInt(skipStr, 10, 64)
 	limit, _ := strconv.ParseInt(limitStr, 10, 64)
 
-	list, total, err := h.svc.GetList(c.Request.Context(), skip, limit)
+	list, total, err := h.svc.GetList(c.Request.Context(), level, skip, limit)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code": 500,
@@ -168,9 +171,9 @@ func (h *CareLevelHandler) Update(c *gin.Context) {
 		})
 		return
 	}
-
-	var req map[string]interface{}
-	if err := c.ShouldBindJSON(&req); err != nil {
+	// 验证请求参数，组合业务字段
+	req, err := util.Validate(domain.CareLevel{}, c)
+	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code": 400,
 			"msg":  "请求参数错误: " + err.Error(),
@@ -228,5 +231,30 @@ func (h *CareLevelHandler) Delete(c *gin.Context) {
 		"code":    200,
 		"msg":     "删除成功",
 		"success": true,
+	})
+}
+
+// GetMenu 获取护理级别菜单
+// @Summary      获取护理级别菜单
+// @Description  用于下拉列表选择的护理级别数据
+// @Tags         护理级别管理
+// @Produce      json
+// @Success      200  {object}  map[string]interface{}  "获取成功"
+// @Router       /care-levels/menu [get]
+func (h *CareLevelHandler) GetMenu(c *gin.Context) {
+	list, err := h.svc.GetMenu(c.Request.Context())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code": 500,
+			"msg":  err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":    200,
+		"msg":     "获取成功",
+		"success": true,
+		"data":    list,
 	})
 }
