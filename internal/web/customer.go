@@ -129,13 +129,12 @@ func (h *CustomerHandler) GetById(c *gin.Context) {
 // @Success      200     {object}  map[string]interface{}  "获取成功"
 // @Router       /customers [get]
 func (h *CustomerHandler) GetList(c *gin.Context) {
-	var req domain.CustomerQuery
+	var req map[string]interface{}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code": 400,
 			"msg":  "请求参数错误: " + err.Error(),
 		})
-		return
 	}
 	skipStr := c.DefaultQuery("skip", "0")
 	limitStr := c.DefaultQuery("limit", "20")
