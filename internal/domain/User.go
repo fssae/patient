@@ -130,6 +130,21 @@ type Customer struct {
 	UpdatedAt time.Time `json:"updated_at" bson:"updated_at"`
 }
 
+// CustomerQuery 客户查询条件
+type CustomerQuery struct {
+	Name            string `json:"name"`
+	Phone           string `json:"phone"`
+	IDCard          string `json:"id_card"`
+	Status          string `json:"status"`
+	BedID           string `json:"bed_id"`
+	CareLevelID     string `json:"care_level_id"`
+	DietPlanID      string `json:"diet_plan_id"`
+	HealthManagerID string `json:"health_manager_id"`
+	MinAge          int    `json:"min_age"`
+	MaxAge          int    `json:"max_age"`
+	SearchKey       string `json:"search_key"` // 万能搜索框：匹配姓名或手机号
+}
+
 // 入住老人
 type ElderlyRegisterRequest struct {
 	// 基本信息
