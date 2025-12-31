@@ -65,7 +65,7 @@ func (h *BedHandler) DeleteBed(c *gin.Context) {
 
 // Create 创建床位
 func (h *BedHandler) Create(c *gin.Context) {
-	var req domain.CreateBedRequest
+	var req domain.CreateBed
 	if util.HandleError(c, c.ShouldBindJSON(&req)) {
 		return
 	}
@@ -79,8 +79,10 @@ func (h *BedHandler) Create(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"code":    200,
-		"msg":     "创建成功",
+		"code": 200,
+		"msg": gin.H{
+			"room_id": req.RoomId,
+		},
 		"success": true,
 	})
 }

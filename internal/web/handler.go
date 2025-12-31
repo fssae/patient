@@ -19,7 +19,7 @@ func NewPatientHandler(svc *service.PatientService) *PatientHandler {
 	}
 }
 
-// RegisterRoutes 注册教师相关路由
+// RegisterRoutes 注册患者相关路由
 func (h *PatientHandler) RegisterRoutes(server *gin.Engine) {
 	// 教师登录  注册 - 不需要JWT验证
 	server.POST("/login", h.Login)

@@ -25,9 +25,13 @@ func NewBedService(repo repository.BedRepository, roomRepo repository.RoomReposi
 }
 
 // Create 创建床位
-func (s *BedService) Create(ctx context.Context, req *domain.CreateBedRequest) error {
+func (s *BedService) Create(ctx context.Context, req *domain.CreateBed) error {
 	// 验证房间是否存在
-	room, err := s.roomRepo.FindById(ctx, req.BedID)
+	RId, err := primitive.ObjectIDFromHex(req.RoomId)
+	if err != nil {
+		return errors.New("id格式错误")
+	}
+	room, err := s.roomRepo.FindById(ctx, RId)
 	if err != nil {
 		return err
 	}
@@ -35,7 +39,6 @@ func (s *BedService) Create(ctx context.Context, req *domain.CreateBedRequest) e
 		return errors.New("房间不存在")
 	}
 	bed := &domain.Bed{
-		RoomID:    req.BedID,
 		Number:    room.Number,
 		Status:    "空闲",
 		CreatedAt: time.Now(),

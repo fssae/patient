@@ -15,13 +15,17 @@ type CustomerService struct {
 	customerRepo repository.CustomerRepository
 	userRepo     repository.UserRepository
 	bedRepo      repository.BedRepository
+	careRepo     repository.CareLevelRepository
+	dietRepo     repository.DietPlanRepository
 }
 
-func NewCustomerService(customerRepo repository.CustomerRepository, userRepo repository.UserRepository, bedRepo repository.BedRepository) *CustomerService {
+func NewCustomerService(customerRepo repository.CustomerRepository, userRepo repository.UserRepository, bedRepo repository.BedRepository, careRepo repository.CareLevelRepository, dietRepo repository.DietPlanRepository) *CustomerService {
 	return &CustomerService{
 		customerRepo: customerRepo,
 		userRepo:     userRepo,
 		bedRepo:      bedRepo,
+		careRepo:     careRepo,
+		dietRepo:     dietRepo,
 	}
 }
 
@@ -239,7 +243,10 @@ func (s *CustomerService) SetDietPlan(ctx context.Context, customerID, dietPlanI
 	if customer == nil {
 		return errors.New("客户不存在")
 	}
-
+	_, err = s.dietRepo.FindById(ctx, dietPlanID)
+	if err != nil {
+		return errors.New("膳食计划不存在")
+	}
 	updates := map[string]interface{}{
 		"diet_plan_id": dietPlanID,
 	}
@@ -255,7 +262,10 @@ func (s *CustomerService) SetCareLevel(ctx context.Context, customerID, careLeve
 	if customer == nil {
 		return errors.New("客户不存在")
 	}
-
+	_, err = s.careRepo.FindById(ctx, careLevelID)
+	if err != nil {
+		return errors.New("护理级别不存在")
+	}
 	updates := map[string]interface{}{
 		"care_level_id": careLevelID,
 	}
@@ -264,5 +274,12 @@ func (s *CustomerService) SetCareLevel(ctx context.Context, customerID, careLeve
 
 // Delete 删除客户
 func (s *CustomerService) Delete(ctx context.Context, id primitive.ObjectID) error {
+	customer, err := s.customerRepo.FindById(ctx, id)
+	if err != nil {
+		return errors.New("患者不存在")
+	}
+	if customer.Status != "退住" {
+		return errors.New("请先退住，无法删除")
+	}
 	return s.customerRepo.Delete(ctx, id)
 }

@@ -62,36 +62,10 @@ type Bed struct {
 	CreatedAt  time.Time          `json:"created_at" bson:"created_at"`
 	UpdatedAt  time.Time          `json:"updated_at" bson:"updated_at"`
 }
-type CreateBedRequest struct {
-	// 基本信息
-	Name    string `json:"name" bson:"name" binding:"required"`
-	Age     int    `json:"age" bson:"age" binding:"required"`
-	Gender  string `json:"gender" bson:"gender" binding:"required"`
-	IDCard  string `json:"id_card" bson:"id_card" binding:"required"`
-	Phone   string `json:"phone" bson:"phone" binding:"required"`
-	Address string `json:"address" bson:"address"`
-
-	// 关联信息 (使用 primitive.ObjectID 对应 MongoDB 的 $oid)
-	BedID primitive.ObjectID `json:"bed_id" bson:"bed_id"`
-
-	// 业务等级
-	CareLevel   string `json:"care_level" bson:"care_level" binding:"required"`
-	HealthLevel string `json:"health_level" bson:"health_level" binding:"required"`
-	DietType    string `json:"diet_type" bson:"diet_type" binding:"required"`
-
-	// 状态与时间
-	Status string `json:"status" bson:"status" binding:"required"`
-	// 数据库通常存 time.Time，这里接收 int64 时间戳，写入 DAO 时需要转换
-	CheckInTime int64 `json:"check_in_time" bson:"check_in_time"`
-
-	// 其他补充
-	EmergencyPhone string `json:"emergency_phone" bson:"emergency_phone"`
-	Medication     string `json:"medication" bson:"medication"`
-	Allergies      string `json:"allergies" bson:"allergies"`
-
-	// 自动生成的字段通常在 DAO 层处理，不一定非要放在 Request 结构体里
-	CreatedAt time.Time `json:"-" bson:"created_at"`
-	UpdatedAt time.Time `json:"-" bson:"updated_at"`
+type CreateBed struct {
+	RoomId string `json:"room_id"`
+	Number string `json:"number"`
+	Status string `json:"status"`
 }
 
 // Customer 客户（入住老人）
