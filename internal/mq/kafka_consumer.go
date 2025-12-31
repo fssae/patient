@@ -99,7 +99,7 @@ func (h *consumerGroupHandler) ConsumeClaim(sess sarama.ConsumerGroupSession, cl
 	for msg := range claim.Messages() {
 		var alert AlertMessage
 		if err := json.Unmarshal(msg.Value, &alert); err != nil {
-			log.Printf("Error unmarshaling alert message: %v", err)
+			log.Printf("Error unmarshaling alert message: %v. Raw message: %s", err, string(msg.Value))
 			sess.MarkMessage(msg, "")
 			continue
 		}
