@@ -12,7 +12,7 @@ import (
 
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
-		return true // Allow all origins for now
+		return true // 目前允许所有来源
 	},
 }
 
@@ -42,41 +42,41 @@ func (manager *WebSocketManager) run() {
 			manager.mu.Lock()
 			manager.clients[conn] = true
 			manager.mu.Unlock()
-			log.Println("New WebSocket client connected")
+			log.Println("新的 WebSocket 客户端已连接")
 		case conn := <-manager.unregister:
 			manager.mu.Lock()
 			if _, ok := manager.clients[conn]; ok {
 				delete(manager.clients, conn)
 				conn.Close()
-				log.Println("WebSocket client disconnected")
+				log.Println("WebSocket 客户端已断开")
 			}
 			manager.mu.Unlock()
 		case message := <-manager.broadcast:
-			manager.mu.RLock()
+			manager.mu.Lock()
 			for conn := range manager.clients {
 				err := conn.WriteMessage(websocket.TextMessage, message)
 				if err != nil {
-					log.Printf("Websocket error: %v", err)
+					log.Printf("Websocket 错误: %v", err)
 					conn.Close()
 					delete(manager.clients, conn)
 				}
 			}
-			manager.mu.RUnlock()
+			manager.mu.Unlock()
 		}
 	}
 }
 
-// Handler returns the Gin handler for WebSocket connections
+// Handler 返回用于 WebSocket 连接的 Gin 处理器
 func (manager *WebSocketManager) Handler(c *gin.Context) {
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
-		log.Printf("Failed to upgrade websocket: %v", err)
+		log.Printf("升级 websocket 失败: %v", err)
 		return
 	}
 	manager.register <- conn
 
-	// Keep connection alive/reader loop
-	// Even if we only push, we need to read to handle close frames
+	// 保持连接活跃/读取循环
+	// 即使我们只是推送数据，也需要读取以处理关闭帧
 	go func() {
 		defer func() {
 			manager.unregister <- conn
@@ -89,24 +89,16 @@ func (manager *WebSocketManager) Handler(c *gin.Context) {
 	}()
 }
 
-// Broadcast sends a message to all connected clients
+// Broadcast 向所有连接的客户端发送消息
 func (manager *WebSocketManager) Broadcast(msg interface{}) {
-	// Serialize to JSON if it's not already bytes
-	// For simplicity, assuming the caller might want to do the serialization or we pass raw bytes/struct
-	// Here we will assume we might receive a struct and handle it, or bytes
-
-	// NOTE: In the service layer we will likely marshal it.
-	// To keep this generic, let's accept bytes or handle json here.
-	// But the manager.broadcast channel expects []byte.
-	// So let's provide a helper method upstream or do it here.
-	// For now, let's just expose the internal channel via a safe method
+	// 如果还不是字节数组，则序列化为 JSON
 }
 
-// SendBytes allows external callers to send raw bytes to all clients
+// SendBytes 允许外部调用者向所有客户端发送原始字节数据
 func (manager *WebSocketManager) SendBytes(data []byte) {
 	select {
 	case manager.broadcast <- data:
 	case <-time.After(1 * time.Second):
-		log.Println("Broadcast channel full, dropping message")
+		log.Println("广播通道已满，丢弃消息")
 	}
 }

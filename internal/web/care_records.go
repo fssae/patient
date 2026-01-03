@@ -32,6 +32,14 @@ func (h *CareRecordHandler) RegisterRoutes(server gin.IRouter) {
 }
 
 // Create 创建护理记录
+// @Summary      创建护理记录
+// @Description  为客户创建新的护理记录文档
+// @Tags         护理记录管理
+// @Accept       json
+// @Produce      json
+// @Param        request  body      domain.CareRecords  true  "护理记录信息"
+// @Success      200      {object}  map[string]interface{}  "创建成功"
+// @Router       /care-records [post]
 func (h *CareRecordHandler) Create(c *gin.Context) {
 	var req domain.CareRecords
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -59,6 +67,14 @@ func (h *CareRecordHandler) Create(c *gin.Context) {
 }
 
 // GetById 获取详情
+// @Summary      获取详情
+// @Description  根据ID获取护理记录详情
+// @Tags         护理记录管理
+// @Accept       json
+// @Produce      json
+// @Param        id   path      string  true  "记录ID"
+// @Success      200  {object}  map[string]interface{}  "获取成功"
+// @Router       /care-records/{id} [get]
 func (h *CareRecordHandler) GetById(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := primitive.ObjectIDFromHex(idStr)
@@ -95,6 +111,16 @@ func (h *CareRecordHandler) GetById(c *gin.Context) {
 }
 
 // GetList 获取列表
+// @Summary      获取列表
+// @Description  分页获取护理记录列表
+// @Tags         护理记录管理
+// @Accept       json
+// @Produce      json
+// @Param        customer_name  query     string  false  "客户姓名"
+// @Param        skip           query     int     false  "跳过数量"  default(0)
+// @Param        limit          query     int     false  "每页数量"  default(20)
+// @Success      200            {object}  map[string]interface{}  "获取成功"
+// @Router       /care-records [get]
 func (h *CareRecordHandler) GetList(c *gin.Context) {
 	customerName := c.Query("customer_name")
 	skipStr := c.DefaultQuery("skip", "0")
@@ -122,6 +148,15 @@ func (h *CareRecordHandler) GetList(c *gin.Context) {
 }
 
 // Update 更新记录
+// @Summary      更新记录
+// @Description  根据ID更新护理记录信息
+// @Tags         护理记录管理
+// @Accept       json
+// @Produce      json
+// @Param        id       path      string              true  "记录ID"
+// @Param        request  body      domain.CareRecords  true  "更新信息"
+// @Success      200      {object}  map[string]interface{}  "更新成功"
+// @Router       /care-records/{id} [put]
 func (h *CareRecordHandler) Update(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := primitive.ObjectIDFromHex(idStr)
@@ -160,6 +195,14 @@ func (h *CareRecordHandler) Update(c *gin.Context) {
 }
 
 // Delete 删除记录
+// @Summary      删除记录
+// @Description  根据ID删除护理记录
+// @Tags         护理记录管理
+// @Accept       json
+// @Produce      json
+// @Param        id   path      string  true  "记录ID"
+// @Success      200  {object}  map[string]interface{}  "删除成功"
+// @Router       /care-records/{id} [delete]
 func (h *CareRecordHandler) Delete(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := primitive.ObjectIDFromHex(idStr)
@@ -188,6 +231,15 @@ func (h *CareRecordHandler) Delete(c *gin.Context) {
 }
 
 // AddRecord 追加护理记录子项
+// @Summary      追加护理记录
+// @Description  向指定护理记录文档中追加一条详细记录
+// @Tags         护理记录管理
+// @Accept       json
+// @Produce      json
+// @Param        id       path      string              true  "记录ID"
+// @Param        request  body      domain.RecordItems  true  "详细记录信息"
+// @Success      200      {object}  map[string]interface{}  "追加成功"
+// @Router       /care-records/{id}/records [post]
 func (h *CareRecordHandler) AddRecord(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := primitive.ObjectIDFromHex(idStr)

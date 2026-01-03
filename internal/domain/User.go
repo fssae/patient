@@ -248,3 +248,50 @@ type HealthManagerQuery struct {
 	Email     string `json:"email"`
 	Specialty string `json:"specialty"`
 }
+
+// 请求结构体定义，用于 Swagger 文档生成
+
+type SetHealthManagerRequest struct {
+	ManagerID   string `json:"manager_id" binding:"required"`
+	ManagerName string `json:"manager_name" binding:"required"`
+}
+
+type SetBedRequest struct {
+	BedID string `json:"bed_id" binding:"required"`
+}
+
+type SetDietPlanRequest struct {
+	DietPlanID string `json:"diet_plan_id" binding:"required"`
+}
+
+type SetCareLevelRequest struct {
+	CareLevelID string `json:"care_level_id" binding:"required"`
+}
+
+type CheckOutRequest struct {
+	CustomerID string `json:"customer_id" binding:"required"`
+	Note       string `json:"note"`
+	CreatedBy  string `json:"created_by" binding:"required"`
+}
+
+type OutgoingRequest struct {
+	CustomerID string `json:"customer_id" binding:"required"`
+	Note       string `json:"note"`
+	CreatedBy  string `json:"created_by" binding:"required"`
+}
+
+type ReturnRequest struct {
+	CustomerID string `json:"customer_id" binding:"required"`
+	Note       string `json:"note"`
+	CreatedBy  string `json:"created_by" binding:"required"`
+}
+
+type EndServiceRequest struct {
+	EndDate string `json:"end_date" binding:"required"`
+}
+
+type PurchaseServiceRequest struct {
+	CustomerID string `json:"customer_id" binding:"required"`
+	ServiceID  string `json:"service_id" binding:"required"`
+	StartDate  string `json:"start_date" binding:"required"`
+}

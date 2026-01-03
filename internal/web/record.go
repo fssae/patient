@@ -85,16 +85,12 @@ func (h *RecordHandler) CheckIn(c *gin.Context) {
 // @Tags         登记管理
 // @Accept       json
 // @Produce      json
-// @Param        request  body      object  true  "退住信息"  example({"customer_id":"507f1f77bcf86cd799439011","note":"客户退住","created_by":"管理员"})
+// @Param        request  body      domain.CheckOutRequest  true  "退住信息"
 // @Success      200      {object}  map[string]interface{}  "退住登记成功"
 // @Failure      400      {object}  map[string]interface{}  "请求参数错误"
 // @Router       /records/check-out [post]
 func (h *RecordHandler) CheckOut(c *gin.Context) {
-	var req struct {
-		CustomerID string `json:"customer_id" binding:"required"`
-		Note       string `json:"note"`
-		CreatedBy  string `json:"created_by" binding:"required"`
-	}
+	var req domain.CheckOutRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code": 400,
@@ -129,12 +125,16 @@ func (h *RecordHandler) CheckOut(c *gin.Context) {
 }
 
 // Outgoing 外出登记
+// @Summary      外出登记
+// @Description  办理客户外出登记
+// @Tags         登记管理
+// @Accept       json
+// @Produce      json
+// @Param        request  body      domain.OutgoingRequest  true  "外出信息"
+// @Success      200      {object}  map[string]interface{}  "外出登记成功"
+// @Router       /records/outgoing [post]
 func (h *RecordHandler) Outgoing(c *gin.Context) {
-	var req struct {
-		CustomerID string `json:"customer_id" binding:"required"`
-		Note       string `json:"note"`
-		CreatedBy  string `json:"created_by" binding:"required"`
-	}
+	var req domain.OutgoingRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code": 400,
@@ -169,12 +169,16 @@ func (h *RecordHandler) Outgoing(c *gin.Context) {
 }
 
 // Return 外出返回
+// @Summary      外出返回
+// @Description  办理客户外出返回登记
+// @Tags         登记管理
+// @Accept       json
+// @Produce      json
+// @Param        request  body      domain.ReturnRequest  true  "返回信息"
+// @Success      200      {object}  map[string]interface{}  "返回登记成功"
+// @Router       /records/return [post]
 func (h *RecordHandler) Return(c *gin.Context) {
-	var req struct {
-		CustomerID string `json:"customer_id" binding:"required"`
-		Note       string `json:"note"`
-		CreatedBy  string `json:"created_by" binding:"required"`
-	}
+	var req domain.ReturnRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code": 400,
@@ -209,6 +213,17 @@ func (h *RecordHandler) Return(c *gin.Context) {
 }
 
 // GetList 获取登记记录列表
+// @Summary      获取登记记录列表
+// @Description  分页获取所有登记记录
+// @Tags         登记管理
+// @Accept       json
+// @Produce      json
+// @Param        customer_id  query     string  false  "客户ID"
+// @Param        type         query     string  false  "记录类型"
+// @Param        skip         query     int     false  "跳过数量"  default(0)
+// @Param        limit        query     int     false  "每页数量"  default(20)
+// @Success      200          {object}  map[string]interface{}  "获取成功"
+// @Router       /records [get]
 func (h *RecordHandler) GetList(c *gin.Context) {
 	customerIDStr := c.Query("customer_id")
 	recordType := c.Query("type")
@@ -242,6 +257,14 @@ func (h *RecordHandler) GetList(c *gin.Context) {
 }
 
 // GetByCustomerID 获取客户的登记记录
+// @Summary      获取客户登记记录
+// @Description  根据客户ID获取其所有登记记录
+// @Tags         登记管理
+// @Accept       json
+// @Produce      json
+// @Param        customer_id  path      string  true  "客户ID"
+// @Success      200          {object}  map[string]interface{}  "获取成功"
+// @Router       /records/customer/{customer_id} [get]
 func (h *RecordHandler) GetByCustomerID(c *gin.Context) {
 	customerIDStr := c.Param("customer_id")
 	customerID, err := primitive.ObjectIDFromHex(customerIDStr)
@@ -271,6 +294,18 @@ func (h *RecordHandler) GetByCustomerID(c *gin.Context) {
 }
 
 // GetCheckInInfo 获取入住登记信息列表
+// @Summary      获取入住列表
+// @Description  根据条件筛选获取入住登记记录
+// @Tags         登记管理
+// @Accept       json
+// @Produce      json
+// @Param        name           query     string  false  "客户姓名"
+// @Param        room_number    query     string  false  "房间号"
+// @Param        nursing_level  query     string  false  "护理级别"
+// @Param        check_in_start query     string  false  "入住开始日期"
+// @Param        check_in_end   query     string  false  "入住结束日期"
+// @Success      200            {object}  map[string]interface{}  "获取成功"
+// @Router       /records/check-in-info [get]
 func (h *RecordHandler) GetCheckInInfo(c *gin.Context) {
 	name := c.Query("name")
 	roomNumber := c.Query("room_number")
@@ -296,6 +331,18 @@ func (h *RecordHandler) GetCheckInInfo(c *gin.Context) {
 }
 
 // GetCheckOutList 获取退住登记信息列表
+// @Summary      获取退住列表
+// @Description  根据条件筛选获取退住登记记录
+// @Tags         登记管理
+// @Accept       json
+// @Produce      json
+// @Param        name             query     string  false  "客户姓名"
+// @Param        room_number      query     string  false  "房间号"
+// @Param        reason           query     string  false  "退住原因"
+// @Param        check_out_start  query     string  false  "退住开始日期"
+// @Param        check_out_end    query     string  false  "退住结束日期"
+// @Success      200              {object}  map[string]interface{}  "获取成功"
+// @Router       /records/check-out-list [get]
 func (h *RecordHandler) GetCheckOutList(c *gin.Context) {
 	name := c.Query("name")
 	roomNumber := c.Query("room_number")
@@ -321,6 +368,17 @@ func (h *RecordHandler) GetCheckOutList(c *gin.Context) {
 }
 
 // GetOutgoingList 获取外出登记信息列表
+// @Summary      获取外出列表
+// @Description  根据条件筛选获取外出登记记录
+// @Tags         登记管理
+// @Accept       json
+// @Produce      json
+// @Param        name        query     string  false  "客户姓名"
+// @Param        start_date  query     string  false  "开始日期"
+// @Param        end_date    query     string  false  "结束日期"
+// @Param        status      query     string  false  "状态"
+// @Success      200         {object}  map[string]interface{}  "获取成功"
+// @Router       /records/outgoing-list [get]
 func (h *RecordHandler) GetOutgoingList(c *gin.Context) {
 	name := c.Query("name")
 	startDate := c.Query("start_date")

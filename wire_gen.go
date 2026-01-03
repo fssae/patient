@@ -80,11 +80,17 @@ func InitWebServer() *App {
 	careRecordService := service.NewCareRecordService(careRecordRepository)
 	careRecordHandler := web.NewCareRecordHandler(careRecordService)
 	webSocketManager := ws.NewWebSocketManager()
-	engine := ioc.InitGin(v, patientHandler, fileHandler, userHandler, healthManagerHandler, roomHandler, bedHandler, careLevelHandler, dietPlanHandler, customerHandler, recordHandler, serviceHandler, careRecordHandler, webSocketManager)
+	analysisDAO := dao.NewAnalysisDAO(database)
+	analysisRepository := repository.NewAnalysisRepository(analysisDAO)
+	analysisService := service.NewAnalysisService(analysisRepository)
+	analysisHandler := web.NewAnalysisHandler(analysisService)
+	statsService := service.NewStatsService()
+	statsHandler := web.NewStatsHandler(statsService)
+	engine := ioc.InitGin(v, patientHandler, fileHandler, userHandler, healthManagerHandler, roomHandler, bedHandler, careLevelHandler, dietPlanHandler, customerHandler, recordHandler, serviceHandler, careRecordHandler, webSocketManager, analysisHandler, statsHandler)
 	redisClient := ioc.InitRedis()
 	config := ioc.InitViper()
 	alertConsumer := mq.NewAlertConsumer()
-	alertService := service.NewAlertService(alertConsumer, webSocketManager)
+	alertService := service.NewAlertService(alertConsumer, webSocketManager, analysisService)
 	app := &App{
 		server:       engine,
 		mongodb:      client,

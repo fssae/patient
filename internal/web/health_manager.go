@@ -31,6 +31,14 @@ func (h *HealthManagerHandler) RegisterRoutes(server gin.IRouter) {
 }
 
 // Create 创建健康管家
+// @Summary      创建健康管家
+// @Description  创建新的健康管家
+// @Tags         健康管家管理
+// @Accept       json
+// @Produce      json
+// @Param        request  body      domain.HealthManager  true  "管家信息"
+// @Success      200      {object}  map[string]interface{}  "创建成功"
+// @Router       /health-managers/create [post]
 func (h *HealthManagerHandler) Create(c *gin.Context) {
 	var req domain.HealthManager
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -58,6 +66,14 @@ func (h *HealthManagerHandler) Create(c *gin.Context) {
 }
 
 // GetById 获取健康管家详情
+// @Summary      获取详情
+// @Description  根据ID获取健康管家详情
+// @Tags         健康管家管理
+// @Accept       json
+// @Produce      json
+// @Param        id   path      string  true  "管家ID"
+// @Success      200  {object}  map[string]interface{}  "获取成功"
+// @Router       /health-managers/{id} [get]
 func (h *HealthManagerHandler) GetById(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := primitive.ObjectIDFromHex(idStr)
@@ -94,6 +110,16 @@ func (h *HealthManagerHandler) GetById(c *gin.Context) {
 }
 
 // GetList 获取健康管家列表
+// @Summary      获取列表
+// @Description  根据查询条件分页获取健康管家列表
+// @Tags         健康管家管理
+// @Accept       json
+// @Produce      json
+// @Param        request  body      domain.HealthManagerQuery  true  "查询条件"
+// @Param        skip     query     int                       false  "跳过数量"  default(0)
+// @Param        limit    query     int                       false  "每页数量"  default(20)
+// @Success      200      {object}  map[string]interface{}           "获取成功"
+// @Router       /health-managers [post]
 func (h *HealthManagerHandler) GetList(c *gin.Context) {
 	var req domain.HealthManagerQuery
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -128,6 +154,15 @@ func (h *HealthManagerHandler) GetList(c *gin.Context) {
 }
 
 // Update 更新健康管家
+// @Summary      更新管家
+// @Description  根据ID更新健康管家信息
+// @Tags         健康管家管理
+// @Accept       json
+// @Produce      json
+// @Param        id       path      string                true  "管家ID"
+// @Param        request  body      domain.HealthManager  true  "更新信息"
+// @Success      200      {object}  map[string]interface{}  "更新成功"
+// @Router       /health-managers/{id} [put]
 func (h *HealthManagerHandler) Update(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := primitive.ObjectIDFromHex(idStr)
@@ -165,6 +200,14 @@ func (h *HealthManagerHandler) Update(c *gin.Context) {
 }
 
 // Delete 删除健康管家
+// @Summary      删除管家
+// @Description  根据ID删除健康管家
+// @Tags         健康管家管理
+// @Accept       json
+// @Produce      json
+// @Param        id   path      string  true  "管家ID"
+// @Success      200  {object}  map[string]interface{}  "删除成功"
+// @Router       /health-managers/{id} [delete]
 func (h *HealthManagerHandler) Delete(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := primitive.ObjectIDFromHex(idStr)

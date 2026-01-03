@@ -28,7 +28,7 @@ func NewPatientService(
 func (s *PatientService) Login(ctx context.Context, req *domain.PatientLoginRequest) (*domain.PatientLoginResponse, error) {
 	patient, err := s.patientRepo.Login(ctx, req.PatientId, req.Password)
 	if err != nil {
-		return nil, errors.New("工号或密码错误")
+		return nil, errors.New("用户名或密码错误")
 	}
 	// 生成JWT
 	tokenString, err := createToken(patient.Id, patient.PatientId)
@@ -38,7 +38,7 @@ func (s *PatientService) Login(ctx context.Context, req *domain.PatientLoginRequ
 	}, nil
 }
 
-// Register 教师注册
+// Register 患者注册
 func (s *PatientService) Register(ctx context.Context, req *domain.PatientRegisterRequest) error {
 	err := s.patientRepo.Register(ctx, req.PatientPhone, req.Password)
 

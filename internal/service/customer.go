@@ -120,7 +120,7 @@ func (s *CustomerService) GetList(ctx context.Context, query domain.CustomerQuer
 	return s.customerRepo.FindList(ctx, filter, skip, limit)
 }
 
-// Update 更新客户信息 (部分更新)
+// Update 更新客户信息 (支持部分字段更新)
 func (s *CustomerService) Update(ctx context.Context, id primitive.ObjectID, updates map[string]interface{}) error {
 	// 验证客户是否存在
 	customer, err := s.customerRepo.FindById(ctx, id)
@@ -130,13 +130,13 @@ func (s *CustomerService) Update(ctx context.Context, id primitive.ObjectID, upd
 	if customer == nil {
 		return errors.New("客户不存在")
 	}
-	//业务字段校验
-	//是否修改了床位
+
+	// 业务逻辑处理：检查是否修改了床位
 	if val, hasBedID := updates["bed_id"]; hasBedID {
 		var newBedID primitive.ObjectID
 		var err error
 
-		// 解析 bed_id，支持 string 和 ObjectID
+		// 解析 bed_id，支持字符串映射或 ObjectID
 		switch v := val.(type) {
 		case string:
 			if v != "" {
@@ -151,16 +151,16 @@ func (s *CustomerService) Update(ctx context.Context, id primitive.ObjectID, upd
 
 		// 如果床位发生了变更
 		if customer.BedID != newBedID {
-			// 1. 释放旧床位
+			// 1. 释放原有的旧床位
 			if !customer.BedID.IsZero() {
 				if err := s.bedRepo.Release(ctx, customer.BedID); err != nil {
 					return err
 				}
 			}
 
-			// 2. 分配新床位
+			// 2. 分配并占用新床位
 			if !newBedID.IsZero() {
-				// 检查新床位是否存在且空闲
+				// 检查新床位是否存在且处于空闲状态
 				bed, err := s.bedRepo.FindById(ctx, newBedID)
 				if err != nil {
 					return err
@@ -169,10 +169,10 @@ func (s *CustomerService) Update(ctx context.Context, id primitive.ObjectID, upd
 					return errors.New("床位不存在")
 				}
 				if bed.Status == "占用" {
-					return errors.New("床位已被占用")
+					return errors.New("该床位已被占用")
 				}
 
-				// 占用新床位
+				// 占用该新床位
 				if err := s.bedRepo.AssignToCustomer(ctx, newBedID, id); err != nil {
 					return err
 				}

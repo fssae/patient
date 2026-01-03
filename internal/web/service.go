@@ -35,6 +35,14 @@ func (h *ServiceHandler) RegisterRoutes(server gin.IRouter) {
 }
 
 // CreateService 创建服务项目
+// @Summary      创建服务项目
+// @Description  添加新的服务项目定义
+// @Tags         服务管理
+// @Accept       json
+// @Produce      json
+// @Param        request  body      domain.Service  true  "服务项目信息"
+// @Success      200      {object}  map[string]interface{}  "创建成功"
+// @Router       /services [post]
 func (h *ServiceHandler) CreateService(c *gin.Context) {
 	var req domain.Service
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -62,6 +70,14 @@ func (h *ServiceHandler) CreateService(c *gin.Context) {
 }
 
 // GetServiceById 获取服务项目详情
+// @Summary      获取详情
+// @Description  根据ID获取服务项目详情
+// @Tags         服务管理
+// @Accept       json
+// @Produce      json
+// @Param        id   path      string  true  "服务项目ID"
+// @Success      200  {object}  map[string]interface{}  "获取成功"
+// @Router       /services/{id} [get]
 func (h *ServiceHandler) GetServiceById(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := primitive.ObjectIDFromHex(idStr)
@@ -98,6 +114,17 @@ func (h *ServiceHandler) GetServiceById(c *gin.Context) {
 }
 
 // GetServiceList 获取服务项目列表
+// @Summary      获取服务项目列表
+// @Description  分页获取服务项目定义列表
+// @Tags         服务管理
+// @Accept       json
+// @Produce      json
+// @Param        category  query     string  false  "类别"
+// @Param        status    query     string  false  "状态"
+// @Param        skip      query     int     false  "跳过数量"  default(0)
+// @Param        limit     query     int     false  "每页数量"  default(20)
+// @Success      200       {object}  map[string]interface{}  "获取成功"
+// @Router       /services [get]
 func (h *ServiceHandler) GetServiceList(c *gin.Context) {
 	category := c.Query("category")
 	status := c.Query("status")
@@ -126,6 +153,15 @@ func (h *ServiceHandler) GetServiceList(c *gin.Context) {
 }
 
 // UpdateService 更新服务项目
+// @Summary      更新服务项目
+// @Description  根据ID更新服务项目信息
+// @Tags         服务管理
+// @Accept       json
+// @Produce      json
+// @Param        id       path      string          true  "服务项目ID"
+// @Param        request  body      domain.Service  true  "服务项目信息"
+// @Success      200      {object}  map[string]interface{}  "更新成功"
+// @Router       /services/{id} [put]
 func (h *ServiceHandler) UpdateService(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := primitive.ObjectIDFromHex(idStr)
@@ -163,6 +199,14 @@ func (h *ServiceHandler) UpdateService(c *gin.Context) {
 }
 
 // DeleteService 删除服务项目
+// @Summary      删除服务项目
+// @Description  根据ID删除服务项目定义
+// @Tags         服务管理
+// @Accept       json
+// @Produce      json
+// @Param        id   path      string  true  "服务项目ID"
+// @Success      200  {object}  map[string]interface{}  "删除成功"
+// @Router       /services/{id} [delete]
 func (h *ServiceHandler) DeleteService(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := primitive.ObjectIDFromHex(idStr)
@@ -196,16 +240,12 @@ func (h *ServiceHandler) DeleteService(c *gin.Context) {
 // @Tags         服务管理
 // @Accept       json
 // @Produce      json
-// @Param        request  body      object  true  "购买信息"  example({"customer_id":"507f1f77bcf86cd799439011","service_id":"507f1f77bcf86cd799439012","start_date":"2024-01-01"})
+// @Param        request  body      domain.PurchaseServiceRequest  true  "购买信息"
 // @Success      200      {object}  map[string]interface{}  "购买成功"
 // @Failure      400      {object}  map[string]interface{}  "请求参数错误"
 // @Router       /services/purchase [post]
 func (h *ServiceHandler) PurchaseService(c *gin.Context) {
-	var req struct {
-		CustomerID string `json:"customer_id" binding:"required"`
-		ServiceID  string `json:"service_id" binding:"required"`
-		StartDate  string `json:"start_date" binding:"required"`
-	}
+	var req domain.PurchaseServiceRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code": 400,
@@ -258,6 +298,14 @@ func (h *ServiceHandler) PurchaseService(c *gin.Context) {
 }
 
 // GetCustomerServices 获取客户购买的服务列表
+// @Summary      获取客户服务列表
+// @Description  获取指定客户已购买的服务列表
+// @Tags         服务管理
+// @Accept       json
+// @Produce      json
+// @Param        customer_id  path      string  true  "客户ID"
+// @Success      200          {object}  map[string]interface{}  "获取成功"
+// @Router       /services/customer/{customer_id} [get]
 func (h *ServiceHandler) GetCustomerServices(c *gin.Context) {
 	customerIDStr := c.Param("customer_id")
 	customerID, err := primitive.ObjectIDFromHex(customerIDStr)
@@ -287,6 +335,15 @@ func (h *ServiceHandler) GetCustomerServices(c *gin.Context) {
 }
 
 // EndService 结束客户服务
+// @Summary      结束客户服务
+// @Description  根据购买记录ID手动结束一项服务
+// @Tags         服务管理
+// @Accept       json
+// @Produce      json
+// @Param        id       path      string  true  "购买记录ID"
+// @Param        request  body      domain.EndServiceRequest  true  "结束信息"
+// @Success      200      {object}  map[string]interface{}  "结束成功"
+// @Router       /services/customer-service/{id}/end [put]
 func (h *ServiceHandler) EndService(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := primitive.ObjectIDFromHex(idStr)
@@ -298,9 +355,7 @@ func (h *ServiceHandler) EndService(c *gin.Context) {
 		return
 	}
 
-	var req struct {
-		EndDate string `json:"end_date" binding:"required"`
-	}
+	var req domain.EndServiceRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code": 400,

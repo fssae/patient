@@ -36,6 +36,7 @@ var MinimalSet = wire.NewSet(
 	dao.NewServiceDAO,
 	dao.NewCustomerServiceDAO,
 	dao.NewCareRecordDAO,
+	dao.NewAnalysisDAO,
 
 	// Repository层
 
@@ -53,6 +54,7 @@ var MinimalSet = wire.NewSet(
 	repository.NewServiceRepository,
 	repository.NewCustomerServiceRepository,
 	repository.NewCareRecordRepository,
+	repository.NewAnalysisRepository,
 
 	// Service层
 	service.NewFileService,
@@ -67,7 +69,9 @@ var MinimalSet = wire.NewSet(
 	service.NewRecordService,
 	service.NewServiceService,
 	service.NewCareRecordService,
+	service.NewAnalysisService,
 	service.NewAlertService,
+	service.NewStatsService,
 
 	// MQ
 	mq.NewAlertConsumer,
@@ -89,6 +93,8 @@ var MinimalSet = wire.NewSet(
 	web.NewRecordHandler,
 	web.NewServiceHandler,
 	web.NewCareRecordHandler,
+	web.NewAnalysisHandler,
+	web.NewStatsHandler,
 
 	// Gin引擎
 	InitGin,

@@ -43,8 +43,7 @@ func (h *CustomerHandler) RegisterRoutes(server gin.IRouter) {
 // @Produce      json
 // @Param        request  body      domain.Customer  true  "客户信息"
 // @Success      200      {object}  map[string]interface{}  "创建成功"
-// @Failure      400      {object}  map[string]interface{}  "请求参数错误"
-// @Router       /customers [post]
+// @Router       /customers/create [post]
 func (h *CustomerHandler) Create(c *gin.Context) {
 	var req domain.Customer
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -71,7 +70,6 @@ func (h *CustomerHandler) Create(c *gin.Context) {
 	})
 }
 
-// GetById 获取客户详情
 // @Summary      获取客户详情
 // @Description  根据ID获取客户详细信息
 // @Tags         客户管理
@@ -97,7 +95,7 @@ func (h *CustomerHandler) GetById(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code": 500,
-			"msg":  err.Error(),
+			"msg":  "服务器内部错误: " + err.Error(),
 		})
 		return
 	}
@@ -109,25 +107,33 @@ func (h *CustomerHandler) GetById(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"code":    200,
-		"msg":     "获取成功",
-		"success": true,
-		"data":    customer,
-	})
+	// 转换为前端要求的 Patient 格式
+	patient := gin.H{
+		"patient_id":     customer.ID.Hex(),
+		"name":           customer.Name,
+		"bed_id":         customer.BedID.Hex(),
+		"age":            customer.Age,
+		"gender":         customer.Gender,
+		"care_level":     "一级护理", // TODO: 从 CareLevelID 获取真实名称
+		"health_manager": customer.HealthManager,
+		"avatar":         "https://picsum.photos/seed/" + customer.ID.Hex() + "/200/200",
+		"diagnosis":      customer.MedicalHistory,
+	}
+
+	c.JSON(http.StatusOK, patient)
 }
 
 // GetList 获取客户列表
 // @Summary      获取客户列表
-// @Description  分页获取客户列表，支持按状态筛选
+// @Description  分页获取客户列表，支持查询条件
 // @Tags         客户管理
 // @Accept       json
 // @Produce      json
-// @Param        status  query     string  false  "客户状态：入住中/已退住/外出中"
-// @Param        skip    query     int     false  "跳过数量"  default(0)
-// @Param        limit   query     int     false  "每页数量"  default(20)
-// @Success      200     {object}  map[string]interface{}  "获取成功"
-// @Router       /customers [get]
+// @Param        request body      domain.CustomerQuery  true  "查询条件"
+// @Param        skip    query     int                  false  "跳过数量"  default(0)
+// @Param        limit   query     int                  false  "每页数量"  default(20)
+// @Success      200     {object}  map[string]interface{}      "获取成功"
+// @Router       /customers [post]
 func (h *CustomerHandler) GetList(c *gin.Context) {
 	var req domain.CustomerQuery
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -162,6 +168,16 @@ func (h *CustomerHandler) GetList(c *gin.Context) {
 }
 
 // Update 更新客户
+// @Summary      更新客户
+// @Description  根据ID更新客户信息
+// @Tags         客户管理
+// @Accept       json
+// @Produce      json
+// @Param        id       path      string           true  "客户ID"
+// @Param        request  body      domain.Customer  true  "更新信息"
+// @Success      200      {object}  map[string]interface{}  "更新成功"
+// @Failure      400      {object}  map[string]interface{}  "请求参数错误"
+// @Router       /customers/{id} [post]
 func (h *CustomerHandler) Update(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := primitive.ObjectIDFromHex(idStr)
@@ -199,6 +215,15 @@ func (h *CustomerHandler) Update(c *gin.Context) {
 }
 
 // SetHealthManager 设置健康管家
+// @Summary      设置健康管家
+// @Description  为指定客户设置健康管家
+// @Tags         客户管理
+// @Accept       json
+// @Produce      json
+// @Param        id       path      string  true  "客户ID"
+// @Param        request  body      domain.SetHealthManagerRequest  true  "管家信息"
+// @Success      200      {object}  map[string]interface{}  "设置成功"
+// @Router       /customers/{id}/health-manager [put]
 func (h *CustomerHandler) SetHealthManager(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := primitive.ObjectIDFromHex(idStr)
@@ -210,10 +235,7 @@ func (h *CustomerHandler) SetHealthManager(c *gin.Context) {
 		return
 	}
 
-	var req struct {
-		ManagerID   string `json:"manager_id" binding:"required"`
-		ManagerName string `json:"manager_name" binding:"required"`
-	}
+	var req domain.SetHealthManagerRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code": 400,
@@ -248,6 +270,15 @@ func (h *CustomerHandler) SetHealthManager(c *gin.Context) {
 }
 
 // SetBed 设置床位
+// @Summary      设置床位
+// @Description  为指定客户设置床位
+// @Tags         客户管理
+// @Accept       json
+// @Produce      json
+// @Param        id       path      string  true  "客户ID"
+// @Param        request  body      domain.SetBedRequest  true  "床位信息"
+// @Success      200      {object}  map[string]interface{}  "设置成功"
+// @Router       /customers/{id}/bed [put]
 func (h *CustomerHandler) SetBed(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := primitive.ObjectIDFromHex(idStr)
@@ -259,9 +290,7 @@ func (h *CustomerHandler) SetBed(c *gin.Context) {
 		return
 	}
 
-	var req struct {
-		BedID string `json:"bed_id" binding:"required"`
-	}
+	var req domain.SetBedRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code": 400,
@@ -296,6 +325,15 @@ func (h *CustomerHandler) SetBed(c *gin.Context) {
 }
 
 // SetDietPlan 设置膳食计划
+// @Summary      设置膳食计划
+// @Description  为指定客户设置膳食计划
+// @Tags         客户管理
+// @Accept       json
+// @Produce      json
+// @Param        id       path      string  true  "客户ID"
+// @Param        request  body      domain.SetDietPlanRequest  true  "计划信息"
+// @Success      200      {object}  map[string]interface{}  "设置成功"
+// @Router       /customers/{id}/diet-plan [put]
 func (h *CustomerHandler) SetDietPlan(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := primitive.ObjectIDFromHex(idStr)
@@ -307,9 +345,7 @@ func (h *CustomerHandler) SetDietPlan(c *gin.Context) {
 		return
 	}
 
-	var req struct {
-		DietPlanID string `json:"diet_plan_id" binding:"required"`
-	}
+	var req domain.SetDietPlanRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code": 400,
@@ -344,6 +380,15 @@ func (h *CustomerHandler) SetDietPlan(c *gin.Context) {
 }
 
 // SetCareLevel 设置护理级别
+// @Summary      设置护理级别
+// @Description  为指定客户设置护理级别
+// @Tags         客户管理
+// @Accept       json
+// @Produce      json
+// @Param        id       path      string  true  "客户ID"
+// @Param        request  body      domain.SetCareLevelRequest  true  "级别信息"
+// @Success      200      {object}  map[string]interface{}  "设置成功"
+// @Router       /customers/{id}/care-level [put]
 func (h *CustomerHandler) SetCareLevel(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := primitive.ObjectIDFromHex(idStr)
@@ -355,9 +400,7 @@ func (h *CustomerHandler) SetCareLevel(c *gin.Context) {
 		return
 	}
 
-	var req struct {
-		CareLevelID string `json:"care_level_id" binding:"required"`
-	}
+	var req domain.SetCareLevelRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code": 400,
@@ -392,6 +435,14 @@ func (h *CustomerHandler) SetCareLevel(c *gin.Context) {
 }
 
 // Delete 删除客户
+// @Summary      删除客户
+// @Description  根据ID删除客户记录
+// @Tags         客户管理
+// @Accept       json
+// @Produce      json
+// @Param        id   path      string  true  "客户ID"
+// @Success      200  {object}  map[string]interface{}  "删除成功"
+// @Router       /customers/{id} [delete]
 func (h *CustomerHandler) Delete(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := primitive.ObjectIDFromHex(idStr)

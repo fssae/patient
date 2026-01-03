@@ -38,8 +38,7 @@ func (h *RoomHandler) RegisterRoutes(server gin.IRouter) {
 // @Produce      json
 // @Param        request  body      domain.Room  true  "房间信息"
 // @Success      200      {object}  map[string]interface{}  "创建成功"
-// @Failure      400      {object}  map[string]interface{}  "请求参数错误"
-// @Router       /rooms [post]
+// @Router       /rooms/create [post]
 func (h *RoomHandler) Create(c *gin.Context) {
 	var req domain.Room
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -67,6 +66,14 @@ func (h *RoomHandler) Create(c *gin.Context) {
 }
 
 // GetById 获取房间详情
+// @Summary      获取详情
+// @Description  根据ID获取房间详情
+// @Tags         房间管理
+// @Accept       json
+// @Produce      json
+// @Param        id   path      string  true  "房间ID"
+// @Success      200  {object}  map[string]interface{}  "获取成功"
+// @Router       /rooms/{id} [get]
 func (h *RoomHandler) GetById(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := primitive.ObjectIDFromHex(idStr)
@@ -143,6 +150,15 @@ func (h *RoomHandler) GetList(c *gin.Context) {
 }
 
 // Update 更新房间
+// @Summary      更新房间
+// @Description  根据ID更新房间信息
+// @Tags         房间管理
+// @Accept       json
+// @Produce      json
+// @Param        id       path      string       true  "房间ID"
+// @Param        request  body      domain.Room  true  "房间信息"
+// @Success      200      {object}  map[string]interface{}  "更新成功"
+// @Router       /rooms/{id} [put]
 func (h *RoomHandler) Update(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := primitive.ObjectIDFromHex(idStr)
@@ -180,6 +196,14 @@ func (h *RoomHandler) Update(c *gin.Context) {
 }
 
 // Delete 删除房间
+// @Summary      删除房间
+// @Description  根据ID删除房间
+// @Tags         房间管理
+// @Accept       json
+// @Produce      json
+// @Param        id   path      string  true  "房间ID"
+// @Success      200  {object}  map[string]interface{}  "删除成功"
+// @Router       /rooms/{id} [delete]
 func (h *RoomHandler) Delete(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := primitive.ObjectIDFromHex(idStr)

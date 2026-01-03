@@ -16,8 +16,11 @@ import (
 	"golang.org/x/exp/slices"
 )
 
+// FileServiceInterface 定义了文件服务的业务接口
 type FileServiceInterface interface {
+	// Upload 上传文件到对象存储，返回 URL、文件类型和错误
 	Upload(ctx *gin.Context, file *multipart.FileHeader) (string, string, error)
+	// UploadFileMessage 在数据库中记录文件上传信息
 	UploadFileMessage(ctx *gin.Context, url string, fileType string) (primitive.ObjectID, error)
 }
 

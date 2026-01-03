@@ -347,7 +347,7 @@ func (s *RecordService) GetCheckInList(ctx context.Context, name, roomNumber, nu
 	}
 
 	// 查询客户
-	customers, _, err := s.customerRepo.FindList(ctx, filter, 0, 0) // 暂不分页? 用户未提分页，但最好分页。这里暂全量。
+	customers, _, err := s.customerRepo.FindList(ctx, filter, 0, 0) // 暂未分页，全量返回
 	if err != nil {
 		return nil, err
 	}
@@ -375,17 +375,7 @@ func (s *RecordService) GetCheckInList(ctx context.Context, name, roomNumber, nu
 		}
 
 		// 填充护理级别
-		// Customer 只有 CareLevelID.
-		// 我们没有 CareLevelRepo.
-		// 用于显示的 Name 无法获取，除非 Customer 存了 snapshot name?
-		// 检查 Customer struct: 有 `CareLevelID`. 没有 Name 字段.
-		// 只能返回 ID? 或者如果不重要，暂时留空或 TODO.
-		// 用户要求 "返回...护理级别"。
-		// 这是一个问题。通常 Customer 在 CheckIn 时会 snapshot 名字?
-		// 或者是 Join.
-		// 鉴于我没有 CareLevelRepo，我无法 lookup.
-		// 我只能返回 ID，或者假设前端已缓存 Map.
-		// 或者，添加 CareLevelRepo 到 RecordService?
+		// 注意: Customer 仅存储 CareLevelID，若需显示名称需关联查询或前端处理
 		item["nursing_level"] = c.CareLevelID.Hex() // 暂时返回 ID
 
 		results = append(results, item)

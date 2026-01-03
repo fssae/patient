@@ -24,9 +24,82 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/beds/{id}/assign": {
+        "/analysis/logs": {
+            "get": {
+                "description": "分页获取存储在 MongoDB 中的报警和会话分析记录",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "分析管理"
+                ],
+                "summary": "获取分析与报警日志",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "每页数量",
+                        "name": "size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/alerts/{id}/resolve": {
             "put": {
-                "description": "将床位分配给指定客户",
+                "description": "处理前端点击“已处理”按钮的操作",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "分析管理"
+                ],
+                "summary": "解除告警",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "告警ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/beds": {
+            "get": {
+                "description": "根据条件分页获取床位列表",
                 "consumes": [
                     "application/json"
                 ],
@@ -36,28 +109,79 @@ const docTemplate = `{
                 "tags": [
                     "床位管理"
                 ],
-                "summary": "分配床位",
+                "summary": "获取床位列表",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "床位ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
+                        "description": "房间号",
+                        "name": "room_number",
+                        "in": "query"
                     },
                     {
-                        "description": "分配信息",
+                        "type": "string",
+                        "description": "床位号",
+                        "name": "bed_number",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "状态",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "跳过数量",
+                        "name": "skip",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "每页数量",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "获取成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/beds/create": {
+            "post": {
+                "description": "创建新的床位记录",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "床位管理"
+                ],
+                "summary": "创建床位",
+                "parameters": [
+                    {
+                        "description": "床位信息",
                         "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "object"
+                            "$ref": "#/definitions/domain.CreateBed"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "分配成功",
+                        "description": "创建成功",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -73,9 +197,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/customers": {
+        "/beds/options/beds": {
             "get": {
-                "description": "分页获取客户列表，支持按状态筛选",
+                "description": "获取用于下拉选择的床位列表",
                 "consumes": [
                     "application/json"
                 ],
@@ -83,14 +207,493 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "客户管理"
+                    "床位管理"
                 ],
-                "summary": "获取客户列表",
+                "summary": "获取床位选项",
+                "responses": {
+                    "200": {
+                        "description": "获取成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/beds/options/rooms": {
+            "get": {
+                "description": "获取用于下拉选择的房间列表",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "床位管理"
+                ],
+                "summary": "获取房间选项",
+                "responses": {
+                    "200": {
+                        "description": "获取成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/beds/room/{room_id}": {
+            "get": {
+                "description": "获取指定房间下的所有床位",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "床位管理"
+                ],
+                "summary": "根据房间ID获取床位列表",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "客户状态：入住中/已退住/外出中",
-                        "name": "status",
+                        "description": "房间ID",
+                        "name": "room_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "获取成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/beds/{id}": {
+            "get": {
+                "description": "根据ID获取床位详细信息",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "床位管理"
+                ],
+                "summary": "获取床位详情",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "床位ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "获取成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "无效的ID",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "床位不存在",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "更新床位信息",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "床位管理"
+                ],
+                "summary": "更新床位",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "床位ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "床位信息",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.Bed"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "更新成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "根据ID删除指定床位",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "床位管理"
+                ],
+                "summary": "删除床位",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "床位ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "删除成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/beds/{id}/release": {
+            "put": {
+                "description": "将指定床位设置为待入住状态",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "床位管理"
+                ],
+                "summary": "释放床位",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "床位ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "释放成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/care-levels": {
+            "get": {
+                "description": "分页获取护理级别列表",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "护理级别管理"
+                ],
+                "summary": "获取护理级别列表",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "跳过数量",
+                        "name": "skip",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "每页数量",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "获取成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "创建新的护理级别",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "护理级别管理"
+                ],
+                "summary": "创建护理级别",
+                "parameters": [
+                    {
+                        "description": "护理级别信息",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.CareLevel"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "创建成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/care-levels/menu": {
+            "get": {
+                "description": "用于下拉列表选择的护理级别数据",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "护理级别管理"
+                ],
+                "summary": "获取护理级别菜单",
+                "responses": {
+                    "200": {
+                        "description": "获取成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/care-levels/{id}": {
+            "get": {
+                "description": "根据ID获取护理级别详细信息",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "护理级别管理"
+                ],
+                "summary": "获取护理级别详情",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "护理级别ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "获取成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "无效的ID",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "护理级别不存在",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "更新护理级别信息",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "护理级别管理"
+                ],
+                "summary": "更新护理级别",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "护理级别ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "护理级别信息",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.CareLevel"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "更新成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "删除指定的护理级别",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "护理级别管理"
+                ],
+                "summary": "删除护理级别",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "护理级别ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "删除成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "无效的ID",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/care-records": {
+            "get": {
+                "description": "分页获取护理记录列表",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "护理记录管理"
+                ],
+                "summary": "获取列表",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "客户姓名",
+                        "name": "customer_name",
                         "in": "query"
                     },
                     {
@@ -119,6 +722,236 @@ const docTemplate = `{
                 }
             },
             "post": {
+                "description": "为客户创建新的护理记录文档",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "护理记录管理"
+                ],
+                "summary": "创建护理记录",
+                "parameters": [
+                    {
+                        "description": "护理记录信息",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.CareRecords"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "创建成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/care-records/{id}": {
+            "get": {
+                "description": "根据ID获取护理记录详情",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "护理记录管理"
+                ],
+                "summary": "获取详情",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "记录ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "获取成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "根据ID更新护理记录信息",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "护理记录管理"
+                ],
+                "summary": "更新记录",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "记录ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "更新信息",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.CareRecords"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "更新成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "根据ID删除护理记录",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "护理记录管理"
+                ],
+                "summary": "删除记录",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "记录ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "删除成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/care-records/{id}/records": {
+            "post": {
+                "description": "向指定护理记录文档中追加一条详细记录",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "护理记录管理"
+                ],
+                "summary": "追加护理记录",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "记录ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "详细记录信息",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.RecordItems"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "追加成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/customers": {
+            "post": {
+                "description": "分页获取客户列表，支持查询条件",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "客户管理"
+                ],
+                "summary": "获取客户列表",
+                "parameters": [
+                    {
+                        "description": "查询条件",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.CustomerQuery"
+                        }
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "跳过数量",
+                        "name": "skip",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "每页数量",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "获取成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/customers/create": {
+            "post": {
                 "description": "创建新的客户记录",
                 "consumes": [
                     "application/json"
@@ -144,13 +977,6 @@ const docTemplate = `{
                 "responses": {
                     "200": {
                         "description": "创建成功",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "请求参数错误",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -204,11 +1030,725 @@ const docTemplate = `{
                         }
                     }
                 }
+            },
+            "post": {
+                "description": "根据ID更新客户信息",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "客户管理"
+                ],
+                "summary": "更新客户",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "客户ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "更新信息",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.Customer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "更新成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "根据ID删除客户记录",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "客户管理"
+                ],
+                "summary": "删除客户",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "客户ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "删除成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/customers/{id}/bed": {
+            "put": {
+                "description": "为指定客户设置床位",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "客户管理"
+                ],
+                "summary": "设置床位",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "客户ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "床位信息",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.SetBedRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "设置成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/customers/{id}/care-level": {
+            "put": {
+                "description": "为指定客户设置护理级别",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "客户管理"
+                ],
+                "summary": "设置护理级别",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "客户ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "级别信息",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.SetCareLevelRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "设置成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/customers/{id}/diet-plan": {
+            "put": {
+                "description": "为指定客户设置膳食计划",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "客户管理"
+                ],
+                "summary": "设置膳食计划",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "客户ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "计划信息",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.SetDietPlanRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "设置成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/customers/{id}/health-manager": {
+            "put": {
+                "description": "为指定客户设置健康管家",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "客户管理"
+                ],
+                "summary": "设置健康管家",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "客户ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "管家信息",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.SetHealthManagerRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "设置成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/diet-plans": {
+            "get": {
+                "description": "分页获取膳食计划列表",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "膳食计划管理"
+                ],
+                "summary": "获取列表",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "跳过数量",
+                        "name": "skip",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "每页数量",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "获取成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/diet-plans/create": {
+            "post": {
+                "description": "创建新的膳食计划",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "膳食计划管理"
+                ],
+                "summary": "创建膳食计划",
+                "parameters": [
+                    {
+                        "description": "计划信息",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.DietPlan"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "创建成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/diet-plans/{id}": {
+            "get": {
+                "description": "根据ID获取膳食计划详情",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "膳食计划管理"
+                ],
+                "summary": "获取详情",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "计划ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "获取成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "根据ID更新膳食计划",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "膳食计划管理"
+                ],
+                "summary": "更新计划",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "计划ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "计划信息",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.DietPlan"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "更新成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "根据ID删除膳食计划",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "膳食计划管理"
+                ],
+                "summary": "删除计划",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "计划ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "删除成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/health-managers": {
+            "post": {
+                "description": "根据查询条件分页获取健康管家列表",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "健康管家管理"
+                ],
+                "summary": "获取列表",
+                "parameters": [
+                    {
+                        "description": "查询条件",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.HealthManagerQuery"
+                        }
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "跳过数量",
+                        "name": "skip",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "每页数量",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "获取成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/health-managers/create": {
+            "post": {
+                "description": "创建新的健康管家",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "健康管家管理"
+                ],
+                "summary": "创建健康管家",
+                "parameters": [
+                    {
+                        "description": "管家信息",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.HealthManager"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "创建成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/health-managers/{id}": {
+            "get": {
+                "description": "根据ID获取健康管家详情",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "健康管家管理"
+                ],
+                "summary": "获取详情",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "管家ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "获取成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "根据ID更新健康管家信息",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "健康管家管理"
+                ],
+                "summary": "更新管家",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "管家ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "更新信息",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.HealthManager"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "更新成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "根据ID删除健康管家",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "健康管家管理"
+                ],
+                "summary": "删除管家",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "管家ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "删除成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/login": {
+            "post": {
+                "description": "患者登录接口，使用手机号和密码登录",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "患者端"
+                ],
+                "summary": "患者登录",
+                "parameters": [
+                    {
+                        "description": "登录信息",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.PatientLoginRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "登录成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "用户名或密码错误",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/records": {
+            "get": {
+                "description": "分页获取所有登记记录",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "登记管理"
+                ],
+                "summary": "获取登记记录列表",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "客户ID",
+                        "name": "customer_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "记录类型",
+                        "name": "type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "跳过数量",
+                        "name": "skip",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "每页数量",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "获取成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
             }
         },
         "/records/check-in": {
             "post": {
-                "description": "为客户办理入住登记，自动分配床位并更新客户状态",
+                "description": "为客户办理入住登记，创建客户档案，自动分配床位并更新客户状态",
                 "consumes": [
                     "application/json"
                 ],
@@ -226,7 +1766,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "object"
+                            "$ref": "#/definitions/domain.ElderlyRegisterRequest"
                         }
                     }
                 ],
@@ -240,6 +1780,62 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "请求参数错误",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/records/check-in-info": {
+            "get": {
+                "description": "根据条件筛选获取入住登记记录",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "登记管理"
+                ],
+                "summary": "获取入住列表",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "客户姓名",
+                        "name": "name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "房间号",
+                        "name": "room_number",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "护理级别",
+                        "name": "nursing_level",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "入住开始日期",
+                        "name": "check_in_start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "入住结束日期",
+                        "name": "check_in_end",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "获取成功",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -268,13 +1864,264 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "object"
+                            "$ref": "#/definitions/domain.CheckOutRequest"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "退住登记成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/records/check-out-list": {
+            "get": {
+                "description": "根据条件筛选获取退住登记记录",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "登记管理"
+                ],
+                "summary": "获取退住列表",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "客户姓名",
+                        "name": "name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "房间号",
+                        "name": "room_number",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "退住原因",
+                        "name": "reason",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "退住开始日期",
+                        "name": "check_out_start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "退住结束日期",
+                        "name": "check_out_end",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "获取成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/records/customer/{customer_id}": {
+            "get": {
+                "description": "根据客户ID获取其所有登记记录",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "登记管理"
+                ],
+                "summary": "获取客户登记记录",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "客户ID",
+                        "name": "customer_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "获取成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/records/outgoing": {
+            "post": {
+                "description": "办理客户外出登记",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "登记管理"
+                ],
+                "summary": "外出登记",
+                "parameters": [
+                    {
+                        "description": "外出信息",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.OutgoingRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "外出登记成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/records/outgoing-list": {
+            "get": {
+                "description": "根据条件筛选获取外出登记记录",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "登记管理"
+                ],
+                "summary": "获取外出列表",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "客户姓名",
+                        "name": "name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "开始日期",
+                        "name": "start_date",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "结束日期",
+                        "name": "end_date",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "状态",
+                        "name": "status",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "获取成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/records/return": {
+            "post": {
+                "description": "办理客户外出返回登记",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "登记管理"
+                ],
+                "summary": "外出返回",
+                "parameters": [
+                    {
+                        "description": "返回信息",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.ReturnRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "返回登记成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/register": {
+            "post": {
+                "description": "患者注册接口",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "患者端"
+                ],
+                "summary": "患者注册",
+                "parameters": [
+                    {
+                        "description": "注册信息",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.PatientRegisterRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "注册成功",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -340,7 +2187,9 @@ const docTemplate = `{
                         }
                     }
                 }
-            },
+            }
+        },
+        "/rooms/create": {
             "post": {
                 "description": "创建新的房间记录",
                 "consumes": [
@@ -371,9 +2220,266 @@ const docTemplate = `{
                             "type": "object",
                             "additionalProperties": true
                         }
+                    }
+                }
+            }
+        },
+        "/rooms/{id}": {
+            "get": {
+                "description": "根据ID获取房间详情",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "房间管理"
+                ],
+                "summary": "获取详情",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "房间ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "获取成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "根据ID更新房间信息",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "房间管理"
+                ],
+                "summary": "更新房间",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "房间ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
                     },
-                    "400": {
-                        "description": "请求参数错误",
+                    {
+                        "description": "房间信息",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.Room"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "更新成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "根据ID删除房间",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "房间管理"
+                ],
+                "summary": "删除房间",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "房间ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "删除成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/services": {
+            "get": {
+                "description": "分页获取服务项目定义列表",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "服务管理"
+                ],
+                "summary": "获取服务项目列表",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "类别",
+                        "name": "category",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "状态",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "跳过数量",
+                        "name": "skip",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "每页数量",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "获取成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "添加新的服务项目定义",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "服务管理"
+                ],
+                "summary": "创建服务项目",
+                "parameters": [
+                    {
+                        "description": "服务项目信息",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.Service"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "创建成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/services/customer-service/{id}/end": {
+            "put": {
+                "description": "根据购买记录ID手动结束一项服务",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "服务管理"
+                ],
+                "summary": "结束客户服务",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "购买记录ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "结束信息",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.EndServiceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "结束成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/services/customer/{customer_id}": {
+            "get": {
+                "description": "获取指定客户已购买的服务列表",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "服务管理"
+                ],
+                "summary": "获取客户服务列表",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "客户ID",
+                        "name": "customer_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "获取成功",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -402,7 +2508,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "object"
+                            "$ref": "#/definitions/domain.PurchaseServiceRequest"
                         }
                     }
                 ],
@@ -416,6 +2522,232 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "请求参数错误",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/services/{id}": {
+            "get": {
+                "description": "根据ID获取服务项目详情",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "服务管理"
+                ],
+                "summary": "获取详情",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "服务项目ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "获取成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "根据ID更新服务项目信息",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "服务管理"
+                ],
+                "summary": "更新服务项目",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "服务项目ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "服务项目信息",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.Service"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "更新成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "根据ID删除服务项目定义",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "服务管理"
+                ],
+                "summary": "删除服务项目",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "服务项目ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "删除成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/stats/summary": {
+            "get": {
+                "description": "获取当前系统的统计概览数据，包括报警统计等",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "统计分析"
+                ],
+                "summary": "获取统计概览",
+                "responses": {
+                    "200": {
+                        "description": "获取成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/stats/trend": {
+            "get": {
+                "description": "获取最近24小时的报警趋势分析数据",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "统计分析"
+                ],
+                "summary": "获取趋势分析",
+                "responses": {
+                    "200": {
+                        "description": "获取成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/upload/image": {
+            "post": {
+                "description": "上传图片文件",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "文件上传"
+                ],
+                "summary": "上传图片",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "图片文件",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "上传成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "上传失败",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/upload/video": {
+            "post": {
+                "description": "上传视频文件",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "文件上传"
+                ],
+                "summary": "上传视频",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "视频文件",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "上传成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "上传失败",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -517,6 +2849,134 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "domain.Bed": {
+            "type": "object",
+            "required": [
+                "number",
+                "room_id"
+            ],
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "customer_id": {
+                    "description": "当前入住客户ID",
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "number": {
+                    "description": "床位号，如 \"A101-1\"",
+                    "type": "string"
+                },
+                "room_id": {
+                    "type": "string"
+                },
+                "status": {
+                    "description": "状态：\"空闲\"/\"占用\"/\"维护中\"",
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.CareLevel": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "content": {
+                    "description": "护理内容描述",
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "level": {
+                    "description": "级别数字：1、2、3等",
+                    "type": "integer"
+                },
+                "name": {
+                    "description": "如\"一级护理\"、\"二级护理\"",
+                    "type": "string"
+                },
+                "price": {
+                    "description": "护理费用",
+                    "type": "number"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.CareRecords": {
+            "type": "object",
+            "required": [
+                "customer_name"
+            ],
+            "properties": {
+                "customer_id": {
+                    "type": "string"
+                },
+                "customer_name": {
+                    "description": "老人姓名",
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "records": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.RecordItems"
+                    }
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.CheckOutRequest": {
+            "type": "object",
+            "required": [
+                "created_by",
+                "customer_id"
+            ],
+            "properties": {
+                "created_by": {
+                    "type": "string"
+                },
+                "customer_id": {
+                    "type": "string"
+                },
+                "note": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.CreateBed": {
+            "type": "object",
+            "properties": {
+                "number": {
+                    "type": "string"
+                },
+                "room_id": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
         "domain.Customer": {
             "type": "object",
             "required": [
@@ -527,6 +2987,10 @@ const docTemplate = `{
             "properties": {
                 "age": {
                     "type": "integer"
+                },
+                "allergy_history": {
+                    "description": "过敏史",
+                    "type": "string"
                 },
                 "bed_id": {
                     "description": "关联床位",
@@ -544,6 +3008,18 @@ const docTemplate = `{
                     "description": "退住日期",
                     "type": "string"
                 },
+                "contact_address": {
+                    "description": "联系地址",
+                    "type": "string"
+                },
+                "contact_name": {
+                    "description": "紧急联系人",
+                    "type": "string"
+                },
+                "contact_phone": {
+                    "description": "联系电话",
+                    "type": "string"
+                },
                 "created_at": {
                     "type": "string"
                 },
@@ -552,6 +3028,10 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "gender": {
+                    "type": "string"
+                },
+                "health_level": {
+                    "description": "健康状况",
                     "type": "string"
                 },
                 "health_manager": {
@@ -569,10 +3049,26 @@ const docTemplate = `{
                     "description": "身份证号",
                     "type": "string"
                 },
+                "medical_history": {
+                    "description": "既往病史",
+                    "type": "string"
+                },
+                "medication": {
+                    "description": "用药情况",
+                    "type": "string"
+                },
                 "name": {
                     "type": "string"
                 },
                 "phone": {
+                    "type": "string"
+                },
+                "relationship": {
+                    "description": "关系",
+                    "type": "string"
+                },
+                "remarks": {
+                    "description": "备注说明",
                     "type": "string"
                 },
                 "status": {
@@ -584,6 +3080,346 @@ const docTemplate = `{
                 },
                 "user_id": {
                     "description": "关联注册用户",
+                    "type": "string"
+                }
+            }
+        },
+        "domain.CustomerQuery": {
+            "type": "object",
+            "properties": {
+                "bed_id": {
+                    "type": "string"
+                },
+                "care_level_id": {
+                    "type": "string"
+                },
+                "diet_plan_id": {
+                    "type": "string"
+                },
+                "health_manager_id": {
+                    "type": "string"
+                },
+                "id_card": {
+                    "type": "string"
+                },
+                "max_age": {
+                    "type": "integer"
+                },
+                "min_age": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "phone": {
+                    "type": "string"
+                },
+                "search_key": {
+                    "description": "万能搜索框：匹配姓名或手机号",
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.DietPlan": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "description": "如\"低糖餐\"、\"流质餐\"",
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "week_menu": {
+                    "description": "每周菜单",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.WeekDayMenu"
+                    }
+                }
+            }
+        },
+        "domain.ElderlyRegisterRequest": {
+            "type": "object",
+            "required": [
+                "age",
+                "bed_id",
+                "contact_name",
+                "contact_phone",
+                "dietary_type",
+                "gender",
+                "health_level",
+                "id_card",
+                "nursing_level",
+                "relationship"
+            ],
+            "properties": {
+                "age": {
+                    "description": "年龄",
+                    "type": "integer"
+                },
+                "allergy_history": {
+                    "description": "过敏史",
+                    "type": "string"
+                },
+                "bed_id": {
+                    "description": "床位分配",
+                    "type": "string"
+                },
+                "check_in_date": {
+                    "description": "入住安排详情",
+                    "type": "string"
+                },
+                "contact_address": {
+                    "description": "联系地址",
+                    "type": "string"
+                },
+                "contact_name": {
+                    "description": "紧急联系人信息",
+                    "type": "string"
+                },
+                "contact_phone": {
+                    "description": "联系电话",
+                    "type": "string"
+                },
+                "dietary_type": {
+                    "description": "膳食类型",
+                    "type": "string"
+                },
+                "gender": {
+                    "description": "性别 (男/女)",
+                    "type": "string"
+                },
+                "health_level": {
+                    "description": "健康状况记录",
+                    "type": "string"
+                },
+                "home_address": {
+                    "description": "家庭住址",
+                    "type": "string"
+                },
+                "id_card": {
+                    "description": "身份证号",
+                    "type": "string"
+                },
+                "medical_history": {
+                    "description": "既往病史",
+                    "type": "string"
+                },
+                "medication": {
+                    "description": "用药情况",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "基本信息",
+                    "type": "string"
+                },
+                "nursing_level": {
+                    "description": "护理级别",
+                    "type": "string"
+                },
+                "phone_number": {
+                    "description": "联系电话",
+                    "type": "string"
+                },
+                "relationship": {
+                    "description": "关系",
+                    "type": "string"
+                },
+                "remarks": {
+                    "description": "备注说明",
+                    "type": "string"
+                }
+            }
+        },
+        "domain.EndServiceRequest": {
+            "type": "object",
+            "required": [
+                "end_date"
+            ],
+            "properties": {
+                "end_date": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.HealthManager": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "phone": {
+                    "type": "string"
+                },
+                "specialty": {
+                    "description": "专长",
+                    "type": "string"
+                },
+                "status": {
+                    "description": "\"在职\"/\"离职\"",
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.HealthManagerQuery": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "phone": {
+                    "type": "string"
+                },
+                "specialty": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.OutgoingRequest": {
+            "type": "object",
+            "required": [
+                "created_by",
+                "customer_id"
+            ],
+            "properties": {
+                "created_by": {
+                    "type": "string"
+                },
+                "customer_id": {
+                    "type": "string"
+                },
+                "note": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.PatientLoginRequest": {
+            "type": "object",
+            "required": [
+                "password",
+                "patientId"
+            ],
+            "properties": {
+                "password": {
+                    "type": "string"
+                },
+                "patientId": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.PatientRegisterRequest": {
+            "type": "object",
+            "required": [
+                "password",
+                "patientphone"
+            ],
+            "properties": {
+                "password": {
+                    "type": "string"
+                },
+                "patientphone": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.PurchaseServiceRequest": {
+            "type": "object",
+            "required": [
+                "customer_id",
+                "service_id",
+                "start_date"
+            ],
+            "properties": {
+                "customer_id": {
+                    "type": "string"
+                },
+                "service_id": {
+                    "type": "string"
+                },
+                "start_date": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.RecordItems": {
+            "type": "object",
+            "required": [
+                "care_item",
+                "care_personnel",
+                "care_result",
+                "care_time"
+            ],
+            "properties": {
+                "care_item": {
+                    "description": "护理项目",
+                    "type": "string"
+                },
+                "care_personnel": {
+                    "description": "护理人员",
+                    "type": "string"
+                },
+                "care_result": {
+                    "description": "护理结果",
+                    "type": "string"
+                },
+                "care_time": {
+                    "description": "护理时间",
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.ReturnRequest": {
+            "type": "object",
+            "required": [
+                "created_by",
+                "customer_id"
+            ],
+            "properties": {
+                "created_by": {
+                    "type": "string"
+                },
+                "customer_id": {
+                    "type": "string"
+                },
+                "note": {
                     "type": "string"
                 }
             }
@@ -628,6 +3464,94 @@ const docTemplate = `{
                 }
             }
         },
+        "domain.Service": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "category": {
+                    "description": "服务类别：\"医疗\"/\"生活\"/\"娱乐\"等",
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "description": "服务名称",
+                    "type": "string"
+                },
+                "price": {
+                    "description": "服务价格",
+                    "type": "number"
+                },
+                "status": {
+                    "description": "状态：\"启用\"/\"停用\"",
+                    "type": "string"
+                },
+                "unit": {
+                    "description": "计价单位：\"次\"/\"月\"/\"年\"",
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.SetBedRequest": {
+            "type": "object",
+            "required": [
+                "bed_id"
+            ],
+            "properties": {
+                "bed_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.SetCareLevelRequest": {
+            "type": "object",
+            "required": [
+                "care_level_id"
+            ],
+            "properties": {
+                "care_level_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.SetDietPlanRequest": {
+            "type": "object",
+            "required": [
+                "diet_plan_id"
+            ],
+            "properties": {
+                "diet_plan_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.SetHealthManagerRequest": {
+            "type": "object",
+            "required": [
+                "manager_id",
+                "manager_name"
+            ],
+            "properties": {
+                "manager_id": {
+                    "type": "string"
+                },
+                "manager_name": {
+                    "type": "string"
+                }
+            }
+        },
         "domain.UserLoginRequest": {
             "type": "object",
             "required": [
@@ -666,6 +3590,31 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "phone": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.WeekDayMenu": {
+            "type": "object",
+            "properties": {
+                "breakfast": {
+                    "description": "早餐",
+                    "type": "string"
+                },
+                "day": {
+                    "description": "\"周一\"、\"周二\"等",
+                    "type": "string"
+                },
+                "dinner": {
+                    "description": "晚餐",
+                    "type": "string"
+                },
+                "lunch": {
+                    "description": "午餐",
+                    "type": "string"
+                },
+                "snack": {
+                    "description": "加餐",
                     "type": "string"
                 }
             }

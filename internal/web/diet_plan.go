@@ -31,6 +31,14 @@ func (h *DietPlanHandler) RegisterRoutes(server gin.IRouter) {
 }
 
 // Create 创建膳食计划
+// @Summary      创建膳食计划
+// @Description  创建新的膳食计划
+// @Tags         膳食计划管理
+// @Accept       json
+// @Produce      json
+// @Param        request  body      domain.DietPlan  true  "计划信息"
+// @Success      200      {object}  map[string]interface{}  "创建成功"
+// @Router       /diet-plans/create [post]
 func (h *DietPlanHandler) Create(c *gin.Context) {
 	var req domain.DietPlan
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -58,6 +66,14 @@ func (h *DietPlanHandler) Create(c *gin.Context) {
 }
 
 // GetById 获取膳食计划详情
+// @Summary      获取详情
+// @Description  根据ID获取膳食计划详情
+// @Tags         膳食计划管理
+// @Accept       json
+// @Produce      json
+// @Param        id   path      string  true  "计划ID"
+// @Success      200  {object}  map[string]interface{}  "获取成功"
+// @Router       /diet-plans/{id} [get]
 func (h *DietPlanHandler) GetById(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := primitive.ObjectIDFromHex(idStr)
@@ -94,6 +110,15 @@ func (h *DietPlanHandler) GetById(c *gin.Context) {
 }
 
 // GetList 获取膳食计划列表
+// @Summary      获取列表
+// @Description  分页获取膳食计划列表
+// @Tags         膳食计划管理
+// @Accept       json
+// @Produce      json
+// @Param        skip   query     int  false  "跳过数量"  default(0)
+// @Param        limit  query     int  false  "每页数量"  default(20)
+// @Success      200    {object}  map[string]interface{}  "获取成功"
+// @Router       /diet-plans [get]
 func (h *DietPlanHandler) GetList(c *gin.Context) {
 	skipStr := c.DefaultQuery("skip", "0")
 	limitStr := c.DefaultQuery("limit", "20")
@@ -120,6 +145,15 @@ func (h *DietPlanHandler) GetList(c *gin.Context) {
 }
 
 // Update 更新膳食计划
+// @Summary      更新计划
+// @Description  根据ID更新膳食计划
+// @Tags         膳食计划管理
+// @Accept       json
+// @Produce      json
+// @Param        id       path      string           true  "计划ID"
+// @Param        request  body      domain.DietPlan  true  "计划信息"
+// @Success      200      {object}  map[string]interface{}  "更新成功"
+// @Router       /diet-plans/{id} [put]
 func (h *DietPlanHandler) Update(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := primitive.ObjectIDFromHex(idStr)
@@ -157,6 +191,14 @@ func (h *DietPlanHandler) Update(c *gin.Context) {
 }
 
 // Delete 删除膳食计划
+// @Summary      删除计划
+// @Description  根据ID删除膳食计划
+// @Tags         膳食计划管理
+// @Accept       json
+// @Produce      json
+// @Param        id   path      string  true  "计划ID"
+// @Success      200  {object}  map[string]interface{}  "删除成功"
+// @Router       /diet-plans/{id} [delete]
 func (h *DietPlanHandler) Delete(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := primitive.ObjectIDFromHex(idStr)

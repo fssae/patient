@@ -58,12 +58,11 @@ func (s *BedService) GetByRoomID(ctx context.Context, roomID primitive.ObjectID)
 }
 
 // GetList 获取床位列表
-// GetList 获取床位列表
 func (s *BedService) GetList(ctx context.Context, roomNumber, bedNumber, status string, skip, limit int64) ([]*domain.Bed, int64, error) {
 	filter := bson.M{}
 
 	if roomNumber != "" {
-		// 先查房间ID
+		// 先查询房间ID
 		room, err := s.roomRepo.FindByNumber(ctx, roomNumber)
 		if err != nil {
 			return nil, 0, err
@@ -71,7 +70,7 @@ func (s *BedService) GetList(ctx context.Context, roomNumber, bedNumber, status 
 		if room != nil {
 			filter["room_id"] = room.ID
 		} else {
-			// 房间不存在，直接返回空
+			// 房间不存在，直接返回空结果
 			return []*domain.Bed{}, 0, nil
 		}
 	}
@@ -140,7 +139,7 @@ func (s *BedService) Delete(ctx context.Context, id primitive.ObjectID) error {
 	return s.repo.Delete(ctx, id)
 }
 
-// GetBedOptions 获取床位递归列表 (房间 -> 床位)
+// GetBedOptions 获取床位递归选项列表 (房间 -> 床位)
 func (s *BedService) GetBedOptions(ctx context.Context) ([]map[string]interface{}, error) {
 	// 获取所有房间
 	var rooms []*domain.Room
@@ -182,7 +181,7 @@ func (s *BedService) GetBedOptions(ctx context.Context) ([]map[string]interface{
 	return options, nil
 }
 
-// GetRoomOptions 获取房间递归列表 (楼层 -> 房间)
+// GetRoomOptions 获取房间递归选项列表 (楼层 -> 房间)
 func (s *BedService) GetRoomOptions(ctx context.Context) ([]map[string]interface{}, error) {
 	// 获取所有房间
 	rooms, _, err := s.roomRepo.FindList(ctx, bson.M{}, 0, 0)
@@ -218,17 +217,6 @@ func (s *BedService) GetRoomOptions(ctx context.Context) ([]map[string]interface
 			options = append(options, floorOption)
 		}
 	}
-
-	// 这里可能需要对楼层排序？map遍历顺序是随机的。通常前端在意顺序。
-	// 这里简单实现，不通过 map 遍历，而是重建切片并排序？或者 leave it to frontend or use slice approach.
-	// For simplicity, I'll assume sorting isn't strictly critical or I'll implement simple sort.
-	// map iteration is random.
-	// Let's rely on slice logic or simple hack: no sort for now unless requested.
-	// Wait, random order floors is bad. I should sort keys.
-	// But import sort not present? I can add it, but replacing large blocks.
-	// I will just iterate map and accept random order, OR uses sorting logic if easy.
-	// Adding "sort" to imports requires another edit.
-	// I will skip sorting logic to KISS, user asked for "recursive list".
 
 	return options, nil
 }

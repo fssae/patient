@@ -128,7 +128,7 @@ func (s *HealthManagerService) Delete(ctx context.Context, id primitive.ObjectID
 		return errors.New("健康管家不存在")
 	}
 
-	// 验证是否有客户关联
+	// TODO: 验证是否有存量客户与之关联，若有则不允许删除或需先转移
 
 	return s.repo.Delete(ctx, id)
 }

@@ -10,16 +10,40 @@ import (
 	"github.com/spf13/viper"
 )
 
-// AlertMessage defines the structure of the alert from Python algorithm
-type AlertMessage struct {
-	EventType string `json:"event_type"` // fall, help, emotion
-	Timestamp int64  `json:"timestamp"`
-	Level     string `json:"level"` // critical, warning, info
-	Message   string `json:"message"`
-	VideoURL  string `json:"video_url"`
+// AlertDetails 定义了会话完成消息中的嵌套详细信息
+type AlertDetails struct {
+	SourceVideo    string `json:"source_video"`
+	VideoURL       string `json:"video_url"`
+	LocalPath      string `json:"local_path"`
+	FramesAnalysed int    `json:"frames_analysed"`
+	TimestampEnd   string `json:"timestamp_end"`
 }
 
-// AlertConsumer handles consuming messages from Kafka
+// AlertMessage 定义了来自 Python 算法的告警结构。
+// 它处理即时事件告警和会话完成总结。
+type AlertMessage struct {
+	ID        string      `json:"id"`
+	Timestamp interface{} `json:"timestamp"` // Unix 时间戳 (秒)
+
+	// --- 类型 1: 事件告警 (存在 event_type) ---
+	EventType string `json:"event_type,omitempty"` // fall(跌倒), pain_expression(疼痛表情), call_help(呼救)
+	Level     string `json:"level,omitempty"`      // critical(严重), warning(警告), info(信息)
+	Message   string `json:"message,omitempty"`
+	VideoURL  string `json:"video_url,omitempty"`
+
+	PatientID  string `json:"patient_id,omitempty"`
+	BedID      string `json:"bed_id,omitempty"`
+	IsResolved bool   `json:"isResolved"` // 初始状态必须为 false
+
+	// --- 类型 2: 会话完成 (alert_type 为 "session_completed") ---
+	AlertType  string        `json:"alert_type,omitempty"`
+	Confidence float64       `json:"confidence,omitempty"`
+	DeviceID   string        `json:"device_id,omitempty"`
+	Location   string        `json:"location,omitempty"`
+	Details    *AlertDetails `json:"details,omitempty"`
+}
+
+// AlertConsumer 处理从 Kafka 消费消息
 type AlertConsumer struct {
 	brokers []string
 	topic   string
@@ -30,9 +54,9 @@ type AlertConsumer struct {
 func NewAlertConsumer() *AlertConsumer {
 	brokers := viper.GetStringSlice("kafka.brokers")
 	if len(brokers) == 0 {
-		brokers = []string{"82.156.64.69:9092"} // Fallback to provided IP
+		brokers = []string{"82.156.64.69:9092"} // 备用 IP
 	}
-	// Fallback/Default config can be adjusted
+	// 默认配置可以根据需要调整
 	return &AlertConsumer{
 		brokers: brokers,
 		topic:   "elderly_alerts",
@@ -40,18 +64,18 @@ func NewAlertConsumer() *AlertConsumer {
 	}
 }
 
-// SetMessageHandler sets the callback for when a valid alert is received
+// SetMessageHandler 设置收到有效告警时的回调函数
 func (c *AlertConsumer) SetMessageHandler(handler func(msg *AlertMessage)) {
 	c.handler = handler
 }
 
-// Start begins the consumer loop
+// Start 启动消费者循环
 func (c *AlertConsumer) Start(ctx context.Context) {
 	config := sarama.NewConfig()
-	config.Version = sarama.V2_1_0_0 // Adjust based on your Kafka version
+	config.Version = sarama.V2_1_0_0 // 根据 Kafka 版本调整
 	config.Consumer.Offsets.Initial = sarama.OffsetNewest
 
-	// Auth configuration if needed, matching existing project style
+	// 如果需要认证，匹配现有项目风格
 	username := viper.GetString("kafka.username")
 	password := viper.GetString("kafka.password")
 	if username != "" && password != "" {
@@ -64,7 +88,7 @@ func (c *AlertConsumer) Start(ctx context.Context) {
 
 	client, err := sarama.NewConsumerGroup(c.brokers, c.groupID, config)
 	if err != nil {
-		log.Printf("Error creating consumer group client: %v", err)
+		log.Printf("创建消费者组客户端错误: %v", err)
 		return
 	}
 
@@ -76,19 +100,19 @@ func (c *AlertConsumer) Start(ctx context.Context) {
 		defer client.Close()
 		for {
 			if err := client.Consume(ctx, []string{c.topic}, handler); err != nil {
-				log.Printf("Error from consumer: %v", err)
-				time.Sleep(time.Second * 5) // Retry delay
+				log.Printf("消费者错误: %v", err)
+				time.Sleep(time.Second * 5) // 重试延迟
 			}
-			// Check if context was cancelled, signaling that the consumer should stop
+			// 检查上下文是否已取消，发出消费者停止信号
 			if ctx.Err() != nil {
 				return
 			}
 		}
 	}()
-	log.Printf("Alert Consumer started on topic %s", c.topic)
+	log.Printf("告警消费者已在主题 %s 上启动", c.topic)
 }
 
-// consumerGroupHandler implements sarama.ConsumerGroupHandler
+// consumerGroupHandler 实现 sarama.ConsumerGroupHandler 接口
 type consumerGroupHandler struct {
 	callback func(msg *AlertMessage)
 }
@@ -99,7 +123,7 @@ func (h *consumerGroupHandler) ConsumeClaim(sess sarama.ConsumerGroupSession, cl
 	for msg := range claim.Messages() {
 		var alert AlertMessage
 		if err := json.Unmarshal(msg.Value, &alert); err != nil {
-			log.Printf("Error unmarshaling alert message: %v. Raw message: %s", err, string(msg.Value))
+			log.Printf("解码告警消息错误: %v. 原始消息: %s", err, string(msg.Value))
 			sess.MarkMessage(msg, "")
 			continue
 		}

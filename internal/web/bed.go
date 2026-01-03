@@ -36,6 +36,15 @@ func (h *BedHandler) RegisterRoutes(server gin.IRouter) {
 }
 
 // DeleteBed 删除床位
+// @Summary      删除床位
+// @Description  根据ID删除指定床位
+// @Tags         床位管理
+// @Accept       json
+// @Produce      json
+// @Param        id   path      string  true  "床位ID"
+// @Success      200  {object}  map[string]interface{}  "删除成功"
+// @Failure      400  {object}  map[string]interface{}  "请求参数错误"
+// @Router       /beds/{id} [delete]
 func (h *BedHandler) DeleteBed(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := primitive.ObjectIDFromHex(idStr)
@@ -64,6 +73,15 @@ func (h *BedHandler) DeleteBed(c *gin.Context) {
 }
 
 // Create 创建床位
+// @Summary      创建床位
+// @Description  创建新的床位记录
+// @Tags         床位管理
+// @Accept       json
+// @Produce      json
+// @Param        request  body      domain.CreateBed  true  "床位信息"
+// @Success      200      {object}  map[string]interface{}  "创建成功"
+// @Failure      400      {object}  map[string]interface{}  "请求参数错误"
+// @Router       /beds/create [post]
 func (h *BedHandler) Create(c *gin.Context) {
 	var req domain.CreateBed
 	if util.HandleError(c, c.ShouldBindJSON(&req)) {
@@ -88,6 +106,16 @@ func (h *BedHandler) Create(c *gin.Context) {
 }
 
 // GetById 获取床位详情
+// @Summary      获取床位详情
+// @Description  根据ID获取床位详细信息
+// @Tags         床位管理
+// @Accept       json
+// @Produce      json
+// @Param        id   path      string  true  "床位ID"
+// @Success      200  {object}  map[string]interface{}  "获取成功"
+// @Failure      400  {object}  map[string]interface{}  "无效的ID"
+// @Failure      404  {object}  map[string]interface{}  "床位不存在"
+// @Router       /beds/{id} [get]
 func (h *BedHandler) GetById(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := primitive.ObjectIDFromHex(idStr)
@@ -124,6 +152,14 @@ func (h *BedHandler) GetById(c *gin.Context) {
 }
 
 // GetByRoomID 根据房间ID获取床位列表
+// @Summary      根据房间ID获取床位列表
+// @Description  获取指定房间下的所有床位
+// @Tags         床位管理
+// @Accept       json
+// @Produce      json
+// @Param        room_id  path      string  true  "房间ID"
+// @Success      200      {object}  map[string]interface{}  "获取成功"
+// @Router       /beds/room/{room_id} [get]
 func (h *BedHandler) GetByRoomID(c *gin.Context) {
 	roomIDStr := c.Param("room_id")
 	roomID, err := primitive.ObjectIDFromHex(roomIDStr)
@@ -153,6 +189,18 @@ func (h *BedHandler) GetByRoomID(c *gin.Context) {
 }
 
 // GetList 获取床位列表
+// @Summary      获取床位列表
+// @Description  根据条件分页获取床位列表
+// @Tags         床位管理
+// @Accept       json
+// @Produce      json
+// @Param        room_number  query     string  false  "房间号"
+// @Param        bed_number   query     string  false  "床位号"
+// @Param        status       query     string  false  "状态"
+// @Param        skip         query     int     false  "跳过数量"  default(0)
+// @Param        limit        query     int     false  "每页数量"  default(20)
+// @Success      200          {object}  map[string]interface{}  "获取成功"
+// @Router       /beds [get]
 func (h *BedHandler) GetList(c *gin.Context) {
 	roomNumber := c.Query("room_number")
 	bedNumber := c.Query("bed_number")
@@ -225,6 +273,14 @@ func (h *BedHandler) Update(c *gin.Context) {
 }
 
 // Release 释放床位
+// @Summary      释放床位
+// @Description  将指定床位设置为待入住状态
+// @Tags         床位管理
+// @Accept       json
+// @Produce      json
+// @Param        id   path      string  true  "床位ID"
+// @Success      200  {object}  map[string]interface{}  "释放成功"
+// @Router       /beds/{id}/release [put]
 func (h *BedHandler) Release(c *gin.Context) {
 	bedIDStr := c.Param("id")
 	bedID, err := primitive.ObjectIDFromHex(bedIDStr)
@@ -253,6 +309,13 @@ func (h *BedHandler) Release(c *gin.Context) {
 }
 
 // GetBedOptions 获取床位选项列表
+// @Summary      获取床位选项
+// @Description  获取用于下拉选择的床位列表
+// @Tags         床位管理
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  map[string]interface{}  "获取成功"
+// @Router       /beds/options/beds [get]
 func (h *BedHandler) GetBedOptions(c *gin.Context) {
 	options, err := h.svc.GetBedOptions(c.Request.Context())
 	if err != nil {
@@ -272,6 +335,13 @@ func (h *BedHandler) GetBedOptions(c *gin.Context) {
 }
 
 // GetRoomOptions 获取房间选项列表
+// @Summary      获取房间选项
+// @Description  获取用于下拉选择的房间列表
+// @Tags         床位管理
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  map[string]interface{}  "获取成功"
+// @Router       /beds/options/rooms [get]
 func (h *BedHandler) GetRoomOptions(c *gin.Context) {
 	options, err := h.svc.GetRoomOptions(c.Request.Context())
 	if err != nil {

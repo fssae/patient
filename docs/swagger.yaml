@@ -1,9 +1,99 @@
 basePath: /api
 definitions:
+  domain.Bed:
+    properties:
+      created_at:
+        type: string
+      customer_id:
+        description: 当前入住客户ID
+        type: string
+      id:
+        type: string
+      number:
+        description: 床位号，如 "A101-1"
+        type: string
+      room_id:
+        type: string
+      status:
+        description: 状态："空闲"/"占用"/"维护中"
+        type: string
+      updated_at:
+        type: string
+    required:
+    - number
+    - room_id
+    type: object
+  domain.CareLevel:
+    properties:
+      content:
+        description: 护理内容描述
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      level:
+        description: 级别数字：1、2、3等
+        type: integer
+      name:
+        description: 如"一级护理"、"二级护理"
+        type: string
+      price:
+        description: 护理费用
+        type: number
+      updated_at:
+        type: string
+    required:
+    - name
+    type: object
+  domain.CareRecords:
+    properties:
+      customer_id:
+        type: string
+      customer_name:
+        description: 老人姓名
+        type: string
+      id:
+        type: string
+      records:
+        items:
+          $ref: '#/definitions/domain.RecordItems'
+        type: array
+      updated_at:
+        type: string
+    required:
+    - customer_name
+    type: object
+  domain.CheckOutRequest:
+    properties:
+      created_by:
+        type: string
+      customer_id:
+        type: string
+      note:
+        type: string
+    required:
+    - created_by
+    - customer_id
+    type: object
+  domain.CreateBed:
+    properties:
+      number:
+        type: string
+      room_id:
+        type: string
+      status:
+        type: string
+    type: object
   domain.Customer:
     properties:
       age:
         type: integer
+      allergy_history:
+        description: 过敏史
+        type: string
       bed_id:
         description: 关联床位
         type: string
@@ -16,12 +106,24 @@ definitions:
       check_out_date:
         description: 退住日期
         type: string
+      contact_address:
+        description: 联系地址
+        type: string
+      contact_name:
+        description: 紧急联系人
+        type: string
+      contact_phone:
+        description: 联系电话
+        type: string
       created_at:
         type: string
       diet_plan_id:
         description: 膳食计划ID
         type: string
       gender:
+        type: string
+      health_level:
+        description: 健康状况
         type: string
       health_manager:
         description: 健康管家姓名
@@ -34,9 +136,21 @@ definitions:
       id_card:
         description: 身份证号
         type: string
+      medical_history:
+        description: 既往病史
+        type: string
+      medication:
+        description: 用药情况
+        type: string
       name:
         type: string
       phone:
+        type: string
+      relationship:
+        description: 关系
+        type: string
+      remarks:
+        description: 备注说明
         type: string
       status:
         description: 状态："入住中"/"已退住"/"外出中"
@@ -50,6 +164,244 @@ definitions:
     - age
     - gender
     - name
+    type: object
+  domain.CustomerQuery:
+    properties:
+      bed_id:
+        type: string
+      care_level_id:
+        type: string
+      diet_plan_id:
+        type: string
+      health_manager_id:
+        type: string
+      id_card:
+        type: string
+      max_age:
+        type: integer
+      min_age:
+        type: integer
+      name:
+        type: string
+      phone:
+        type: string
+      search_key:
+        description: 万能搜索框：匹配姓名或手机号
+        type: string
+      status:
+        type: string
+    type: object
+  domain.DietPlan:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      name:
+        description: 如"低糖餐"、"流质餐"
+        type: string
+      updated_at:
+        type: string
+      week_menu:
+        description: 每周菜单
+        items:
+          $ref: '#/definitions/domain.WeekDayMenu'
+        type: array
+    required:
+    - name
+    type: object
+  domain.ElderlyRegisterRequest:
+    properties:
+      age:
+        description: 年龄
+        type: integer
+      allergy_history:
+        description: 过敏史
+        type: string
+      bed_id:
+        description: 床位分配
+        type: string
+      check_in_date:
+        description: 入住安排详情
+        type: string
+      contact_address:
+        description: 联系地址
+        type: string
+      contact_name:
+        description: 紧急联系人信息
+        type: string
+      contact_phone:
+        description: 联系电话
+        type: string
+      dietary_type:
+        description: 膳食类型
+        type: string
+      gender:
+        description: 性别 (男/女)
+        type: string
+      health_level:
+        description: 健康状况记录
+        type: string
+      home_address:
+        description: 家庭住址
+        type: string
+      id_card:
+        description: 身份证号
+        type: string
+      medical_history:
+        description: 既往病史
+        type: string
+      medication:
+        description: 用药情况
+        type: string
+      name:
+        description: 基本信息
+        type: string
+      nursing_level:
+        description: 护理级别
+        type: string
+      phone_number:
+        description: 联系电话
+        type: string
+      relationship:
+        description: 关系
+        type: string
+      remarks:
+        description: 备注说明
+        type: string
+    required:
+    - age
+    - bed_id
+    - contact_name
+    - contact_phone
+    - dietary_type
+    - gender
+    - health_level
+    - id_card
+    - nursing_level
+    - relationship
+    type: object
+  domain.EndServiceRequest:
+    properties:
+      end_date:
+        type: string
+    required:
+    - end_date
+    type: object
+  domain.HealthManager:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      phone:
+        type: string
+      specialty:
+        description: 专长
+        type: string
+      status:
+        description: '"在职"/"离职"'
+        type: string
+      updated_at:
+        type: string
+    required:
+    - name
+    type: object
+  domain.HealthManagerQuery:
+    properties:
+      email:
+        type: string
+      name:
+        type: string
+      phone:
+        type: string
+      specialty:
+        type: string
+    type: object
+  domain.OutgoingRequest:
+    properties:
+      created_by:
+        type: string
+      customer_id:
+        type: string
+      note:
+        type: string
+    required:
+    - created_by
+    - customer_id
+    type: object
+  domain.PatientLoginRequest:
+    properties:
+      password:
+        type: string
+      patientId:
+        type: string
+    required:
+    - password
+    - patientId
+    type: object
+  domain.PatientRegisterRequest:
+    properties:
+      password:
+        type: string
+      patientphone:
+        type: string
+    required:
+    - password
+    - patientphone
+    type: object
+  domain.PurchaseServiceRequest:
+    properties:
+      customer_id:
+        type: string
+      service_id:
+        type: string
+      start_date:
+        type: string
+    required:
+    - customer_id
+    - service_id
+    - start_date
+    type: object
+  domain.RecordItems:
+    properties:
+      care_item:
+        description: 护理项目
+        type: string
+      care_personnel:
+        description: 护理人员
+        type: string
+      care_result:
+        description: 护理结果
+        type: string
+      care_time:
+        description: 护理时间
+        type: string
+      created_at:
+        type: string
+    required:
+    - care_item
+    - care_personnel
+    - care_result
+    - care_time
+    type: object
+  domain.ReturnRequest:
+    properties:
+      created_by:
+        type: string
+      customer_id:
+        type: string
+      note:
+        type: string
+    required:
+    - created_by
+    - customer_id
     type: object
   domain.Room:
     properties:
@@ -78,6 +430,65 @@ definitions:
         type: string
     required:
     - number
+    type: object
+  domain.Service:
+    properties:
+      category:
+        description: 服务类别："医疗"/"生活"/"娱乐"等
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      name:
+        description: 服务名称
+        type: string
+      price:
+        description: 服务价格
+        type: number
+      status:
+        description: 状态："启用"/"停用"
+        type: string
+      unit:
+        description: 计价单位："次"/"月"/"年"
+        type: string
+      updated_at:
+        type: string
+    required:
+    - name
+    type: object
+  domain.SetBedRequest:
+    properties:
+      bed_id:
+        type: string
+    required:
+    - bed_id
+    type: object
+  domain.SetCareLevelRequest:
+    properties:
+      care_level_id:
+        type: string
+    required:
+    - care_level_id
+    type: object
+  domain.SetDietPlanRequest:
+    properties:
+      diet_plan_id:
+        type: string
+    required:
+    - diet_plan_id
+    type: object
+  domain.SetHealthManagerRequest:
+    properties:
+      manager_id:
+        type: string
+      manager_name:
+        type: string
+    required:
+    - manager_id
+    - manager_name
     type: object
   domain.UserLoginRequest:
     properties:
@@ -108,6 +519,24 @@ definitions:
     - password
     - phone
     type: object
+  domain.WeekDayMenu:
+    properties:
+      breakfast:
+        description: 早餐
+        type: string
+      day:
+        description: '"周一"、"周二"等'
+        type: string
+      dinner:
+        description: 晚餐
+        type: string
+      lunch:
+        description: 午餐
+        type: string
+      snack:
+        description: 加餐
+        type: string
+    type: object
 host: localhost:8081
 info:
   contact:
@@ -122,46 +551,70 @@ info:
   title: 东软顾养中心 API
   version: "1.0"
 paths:
-  /beds/{id}/assign:
-    put:
+  /analysis/logs:
+    get:
       consumes:
       - application/json
-      description: 将床位分配给指定客户
+      description: 分页获取存储在 MongoDB 中的报警和会话分析记录
       parameters:
-      - description: 床位ID
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: 分配信息
-        in: body
-        name: request
-        required: true
-        schema:
-          type: object
+      - default: 1
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: 每页数量
+        in: query
+        name: size
+        type: integer
       produces:
       - application/json
       responses:
         "200":
-          description: 分配成功
+          description: OK
           schema:
             additionalProperties: true
             type: object
-        "400":
-          description: 请求参数错误
-          schema:
-            additionalProperties: true
-            type: object
-      summary: 分配床位
+      summary: 获取分析与报警日志
       tags:
-      - 床位管理
-  /customers:
+      - 分析管理
+  /api/alerts/{id}/resolve:
+    put:
+      consumes:
+      - application/json
+      description: 处理前端点击“已处理”按钮的操作
+      parameters:
+      - description: 告警ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 解除告警
+      tags:
+      - 分析管理
+  /beds:
     get:
       consumes:
       - application/json
-      description: 分页获取客户列表，支持按状态筛选
+      description: 根据条件分页获取床位列表
       parameters:
-      - description: 客户状态：入住中/已退住/外出中
+      - description: 房间号
+        in: query
+        name: room_number
+        type: string
+      - description: 床位号
+        in: query
+        name: bed_number
+        type: string
+      - description: 状态
         in: query
         name: status
         type: string
@@ -183,20 +636,133 @@ paths:
           schema:
             additionalProperties: true
             type: object
-      summary: 获取客户列表
+      summary: 获取床位列表
       tags:
-      - 客户管理
-    post:
+      - 床位管理
+  /beds/{id}:
+    delete:
       consumes:
       - application/json
-      description: 创建新的客户记录
+      description: 根据ID删除指定床位
       parameters:
-      - description: 客户信息
+      - description: 床位ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 删除成功
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 删除床位
+      tags:
+      - 床位管理
+    get:
+      consumes:
+      - application/json
+      description: 根据ID获取床位详细信息
+      parameters:
+      - description: 床位ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 无效的ID
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: 床位不存在
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 获取床位详情
+      tags:
+      - 床位管理
+    put:
+      consumes:
+      - application/json
+      description: 更新床位信息
+      parameters:
+      - description: 床位ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 床位信息
         in: body
         name: request
         required: true
         schema:
-          $ref: '#/definitions/domain.Customer'
+          $ref: '#/definitions/domain.Bed'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 更新成功
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 更新床位
+      tags:
+      - 床位管理
+  /beds/{id}/release:
+    put:
+      consumes:
+      - application/json
+      description: 将指定床位设置为待入住状态
+      parameters:
+      - description: 床位ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 释放成功
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 释放床位
+      tags:
+      - 床位管理
+  /beds/create:
+    post:
+      consumes:
+      - application/json
+      description: 创建新的床位记录
+      parameters:
+      - description: 床位信息
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.CreateBed'
       produces:
       - application/json
       responses:
@@ -210,10 +776,427 @@ paths:
           schema:
             additionalProperties: true
             type: object
-      summary: 创建客户
+      summary: 创建床位
+      tags:
+      - 床位管理
+  /beds/options/beds:
+    get:
+      consumes:
+      - application/json
+      description: 获取用于下拉选择的床位列表
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 获取床位选项
+      tags:
+      - 床位管理
+  /beds/options/rooms:
+    get:
+      consumes:
+      - application/json
+      description: 获取用于下拉选择的房间列表
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 获取房间选项
+      tags:
+      - 床位管理
+  /beds/room/{room_id}:
+    get:
+      consumes:
+      - application/json
+      description: 获取指定房间下的所有床位
+      parameters:
+      - description: 房间ID
+        in: path
+        name: room_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 根据房间ID获取床位列表
+      tags:
+      - 床位管理
+  /care-levels:
+    get:
+      consumes:
+      - application/json
+      description: 分页获取护理级别列表
+      parameters:
+      - default: 0
+        description: 跳过数量
+        in: query
+        name: skip
+        type: integer
+      - default: 20
+        description: 每页数量
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 获取护理级别列表
+      tags:
+      - 护理级别管理
+    post:
+      consumes:
+      - application/json
+      description: 创建新的护理级别
+      parameters:
+      - description: 护理级别信息
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.CareLevel'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 创建成功
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 创建护理级别
+      tags:
+      - 护理级别管理
+  /care-levels/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: 删除指定的护理级别
+      parameters:
+      - description: 护理级别ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 删除成功
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 无效的ID
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 删除护理级别
+      tags:
+      - 护理级别管理
+    get:
+      consumes:
+      - application/json
+      description: 根据ID获取护理级别详细信息
+      parameters:
+      - description: 护理级别ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 无效的ID
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: 护理级别不存在
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 获取护理级别详情
+      tags:
+      - 护理级别管理
+    put:
+      consumes:
+      - application/json
+      description: 更新护理级别信息
+      parameters:
+      - description: 护理级别ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 护理级别信息
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.CareLevel'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 更新成功
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 更新护理级别
+      tags:
+      - 护理级别管理
+  /care-levels/menu:
+    get:
+      description: 用于下拉列表选择的护理级别数据
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 获取护理级别菜单
+      tags:
+      - 护理级别管理
+  /care-records:
+    get:
+      consumes:
+      - application/json
+      description: 分页获取护理记录列表
+      parameters:
+      - description: 客户姓名
+        in: query
+        name: customer_name
+        type: string
+      - default: 0
+        description: 跳过数量
+        in: query
+        name: skip
+        type: integer
+      - default: 20
+        description: 每页数量
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 获取列表
+      tags:
+      - 护理记录管理
+    post:
+      consumes:
+      - application/json
+      description: 为客户创建新的护理记录文档
+      parameters:
+      - description: 护理记录信息
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.CareRecords'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 创建成功
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 创建护理记录
+      tags:
+      - 护理记录管理
+  /care-records/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: 根据ID删除护理记录
+      parameters:
+      - description: 记录ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 删除成功
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 删除记录
+      tags:
+      - 护理记录管理
+    get:
+      consumes:
+      - application/json
+      description: 根据ID获取护理记录详情
+      parameters:
+      - description: 记录ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 获取详情
+      tags:
+      - 护理记录管理
+    put:
+      consumes:
+      - application/json
+      description: 根据ID更新护理记录信息
+      parameters:
+      - description: 记录ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 更新信息
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.CareRecords'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 更新成功
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 更新记录
+      tags:
+      - 护理记录管理
+  /care-records/{id}/records:
+    post:
+      consumes:
+      - application/json
+      description: 向指定护理记录文档中追加一条详细记录
+      parameters:
+      - description: 记录ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 详细记录信息
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.RecordItems'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 追加成功
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 追加护理记录
+      tags:
+      - 护理记录管理
+  /customers:
+    post:
+      consumes:
+      - application/json
+      description: 分页获取客户列表，支持查询条件
+      parameters:
+      - description: 查询条件
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.CustomerQuery'
+      - default: 0
+        description: 跳过数量
+        in: query
+        name: skip
+        type: integer
+      - default: 20
+        description: 每页数量
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 获取客户列表
       tags:
       - 客户管理
   /customers/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: 根据ID删除客户记录
+      parameters:
+      - description: 客户ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 删除成功
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 删除客户
+      tags:
+      - 客户管理
     get:
       consumes:
       - application/json
@@ -245,18 +1228,499 @@ paths:
       summary: 获取客户详情
       tags:
       - 客户管理
+    post:
+      consumes:
+      - application/json
+      description: 根据ID更新客户信息
+      parameters:
+      - description: 客户ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 更新信息
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.Customer'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 更新成功
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 更新客户
+      tags:
+      - 客户管理
+  /customers/{id}/bed:
+    put:
+      consumes:
+      - application/json
+      description: 为指定客户设置床位
+      parameters:
+      - description: 客户ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 床位信息
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.SetBedRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 设置成功
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 设置床位
+      tags:
+      - 客户管理
+  /customers/{id}/care-level:
+    put:
+      consumes:
+      - application/json
+      description: 为指定客户设置护理级别
+      parameters:
+      - description: 客户ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 级别信息
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.SetCareLevelRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 设置成功
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 设置护理级别
+      tags:
+      - 客户管理
+  /customers/{id}/diet-plan:
+    put:
+      consumes:
+      - application/json
+      description: 为指定客户设置膳食计划
+      parameters:
+      - description: 客户ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 计划信息
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.SetDietPlanRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 设置成功
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 设置膳食计划
+      tags:
+      - 客户管理
+  /customers/{id}/health-manager:
+    put:
+      consumes:
+      - application/json
+      description: 为指定客户设置健康管家
+      parameters:
+      - description: 客户ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 管家信息
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.SetHealthManagerRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 设置成功
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 设置健康管家
+      tags:
+      - 客户管理
+  /customers/create:
+    post:
+      consumes:
+      - application/json
+      description: 创建新的客户记录
+      parameters:
+      - description: 客户信息
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.Customer'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 创建成功
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 创建客户
+      tags:
+      - 客户管理
+  /diet-plans:
+    get:
+      consumes:
+      - application/json
+      description: 分页获取膳食计划列表
+      parameters:
+      - default: 0
+        description: 跳过数量
+        in: query
+        name: skip
+        type: integer
+      - default: 20
+        description: 每页数量
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 获取列表
+      tags:
+      - 膳食计划管理
+  /diet-plans/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: 根据ID删除膳食计划
+      parameters:
+      - description: 计划ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 删除成功
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 删除计划
+      tags:
+      - 膳食计划管理
+    get:
+      consumes:
+      - application/json
+      description: 根据ID获取膳食计划详情
+      parameters:
+      - description: 计划ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 获取详情
+      tags:
+      - 膳食计划管理
+    put:
+      consumes:
+      - application/json
+      description: 根据ID更新膳食计划
+      parameters:
+      - description: 计划ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 计划信息
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.DietPlan'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 更新成功
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 更新计划
+      tags:
+      - 膳食计划管理
+  /diet-plans/create:
+    post:
+      consumes:
+      - application/json
+      description: 创建新的膳食计划
+      parameters:
+      - description: 计划信息
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.DietPlan'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 创建成功
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 创建膳食计划
+      tags:
+      - 膳食计划管理
+  /health-managers:
+    post:
+      consumes:
+      - application/json
+      description: 根据查询条件分页获取健康管家列表
+      parameters:
+      - description: 查询条件
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.HealthManagerQuery'
+      - default: 0
+        description: 跳过数量
+        in: query
+        name: skip
+        type: integer
+      - default: 20
+        description: 每页数量
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 获取列表
+      tags:
+      - 健康管家管理
+  /health-managers/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: 根据ID删除健康管家
+      parameters:
+      - description: 管家ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 删除成功
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 删除管家
+      tags:
+      - 健康管家管理
+    get:
+      consumes:
+      - application/json
+      description: 根据ID获取健康管家详情
+      parameters:
+      - description: 管家ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 获取详情
+      tags:
+      - 健康管家管理
+    put:
+      consumes:
+      - application/json
+      description: 根据ID更新健康管家信息
+      parameters:
+      - description: 管家ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 更新信息
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.HealthManager'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 更新成功
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 更新管家
+      tags:
+      - 健康管家管理
+  /health-managers/create:
+    post:
+      consumes:
+      - application/json
+      description: 创建新的健康管家
+      parameters:
+      - description: 管家信息
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.HealthManager'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 创建成功
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 创建健康管家
+      tags:
+      - 健康管家管理
+  /login:
+    post:
+      consumes:
+      - application/json
+      description: 患者登录接口，使用手机号和密码登录
+      parameters:
+      - description: 登录信息
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.PatientLoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 登录成功
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: 用户名或密码错误
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 患者登录
+      tags:
+      - 患者端
+  /records:
+    get:
+      consumes:
+      - application/json
+      description: 分页获取所有登记记录
+      parameters:
+      - description: 客户ID
+        in: query
+        name: customer_id
+        type: string
+      - description: 记录类型
+        in: query
+        name: type
+        type: string
+      - default: 0
+        description: 跳过数量
+        in: query
+        name: skip
+        type: integer
+      - default: 20
+        description: 每页数量
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 获取登记记录列表
+      tags:
+      - 登记管理
   /records/check-in:
     post:
       consumes:
       - application/json
-      description: 为客户办理入住登记，自动分配床位并更新客户状态
+      description: 为客户办理入住登记，创建客户档案，自动分配床位并更新客户状态
       parameters:
       - description: 入住信息
         in: body
         name: request
         required: true
         schema:
-          type: object
+          $ref: '#/definitions/domain.ElderlyRegisterRequest'
       produces:
       - application/json
       responses:
@@ -273,6 +1737,43 @@ paths:
       summary: 入住登记
       tags:
       - 登记管理
+  /records/check-in-info:
+    get:
+      consumes:
+      - application/json
+      description: 根据条件筛选获取入住登记记录
+      parameters:
+      - description: 客户姓名
+        in: query
+        name: name
+        type: string
+      - description: 房间号
+        in: query
+        name: room_number
+        type: string
+      - description: 护理级别
+        in: query
+        name: nursing_level
+        type: string
+      - description: 入住开始日期
+        in: query
+        name: check_in_start
+        type: string
+      - description: 入住结束日期
+        in: query
+        name: check_in_end
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 获取入住列表
+      tags:
+      - 登记管理
   /records/check-out:
     post:
       consumes:
@@ -284,7 +1785,7 @@ paths:
         name: request
         required: true
         schema:
-          type: object
+          $ref: '#/definitions/domain.CheckOutRequest'
       produces:
       - application/json
       responses:
@@ -301,6 +1802,172 @@ paths:
       summary: 退住登记
       tags:
       - 登记管理
+  /records/check-out-list:
+    get:
+      consumes:
+      - application/json
+      description: 根据条件筛选获取退住登记记录
+      parameters:
+      - description: 客户姓名
+        in: query
+        name: name
+        type: string
+      - description: 房间号
+        in: query
+        name: room_number
+        type: string
+      - description: 退住原因
+        in: query
+        name: reason
+        type: string
+      - description: 退住开始日期
+        in: query
+        name: check_out_start
+        type: string
+      - description: 退住结束日期
+        in: query
+        name: check_out_end
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 获取退住列表
+      tags:
+      - 登记管理
+  /records/customer/{customer_id}:
+    get:
+      consumes:
+      - application/json
+      description: 根据客户ID获取其所有登记记录
+      parameters:
+      - description: 客户ID
+        in: path
+        name: customer_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 获取客户登记记录
+      tags:
+      - 登记管理
+  /records/outgoing:
+    post:
+      consumes:
+      - application/json
+      description: 办理客户外出登记
+      parameters:
+      - description: 外出信息
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.OutgoingRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 外出登记成功
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 外出登记
+      tags:
+      - 登记管理
+  /records/outgoing-list:
+    get:
+      consumes:
+      - application/json
+      description: 根据条件筛选获取外出登记记录
+      parameters:
+      - description: 客户姓名
+        in: query
+        name: name
+        type: string
+      - description: 开始日期
+        in: query
+        name: start_date
+        type: string
+      - description: 结束日期
+        in: query
+        name: end_date
+        type: string
+      - description: 状态
+        in: query
+        name: status
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 获取外出列表
+      tags:
+      - 登记管理
+  /records/return:
+    post:
+      consumes:
+      - application/json
+      description: 办理客户外出返回登记
+      parameters:
+      - description: 返回信息
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.ReturnRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 返回登记成功
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 外出返回
+      tags:
+      - 登记管理
+  /register:
+    post:
+      consumes:
+      - application/json
+      description: 患者注册接口
+      parameters:
+      - description: 注册信息
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.PatientRegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 注册成功
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 患者注册
+      tags:
+      - 患者端
   /rooms:
     get:
       consumes:
@@ -336,6 +2003,77 @@ paths:
       summary: 获取房间列表
       tags:
       - 房间管理
+  /rooms/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: 根据ID删除房间
+      parameters:
+      - description: 房间ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 删除成功
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 删除房间
+      tags:
+      - 房间管理
+    get:
+      consumes:
+      - application/json
+      description: 根据ID获取房间详情
+      parameters:
+      - description: 房间ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 获取详情
+      tags:
+      - 房间管理
+    put:
+      consumes:
+      - application/json
+      description: 根据ID更新房间信息
+      parameters:
+      - description: 房间ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 房间信息
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.Room'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 更新成功
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 更新房间
+      tags:
+      - 房间管理
+  /rooms/create:
     post:
       consumes:
       - application/json
@@ -355,14 +2093,186 @@ paths:
           schema:
             additionalProperties: true
             type: object
-        "400":
-          description: 请求参数错误
-          schema:
-            additionalProperties: true
-            type: object
       summary: 创建房间
       tags:
       - 房间管理
+  /services:
+    get:
+      consumes:
+      - application/json
+      description: 分页获取服务项目定义列表
+      parameters:
+      - description: 类别
+        in: query
+        name: category
+        type: string
+      - description: 状态
+        in: query
+        name: status
+        type: string
+      - default: 0
+        description: 跳过数量
+        in: query
+        name: skip
+        type: integer
+      - default: 20
+        description: 每页数量
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 获取服务项目列表
+      tags:
+      - 服务管理
+    post:
+      consumes:
+      - application/json
+      description: 添加新的服务项目定义
+      parameters:
+      - description: 服务项目信息
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.Service'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 创建成功
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 创建服务项目
+      tags:
+      - 服务管理
+  /services/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: 根据ID删除服务项目定义
+      parameters:
+      - description: 服务项目ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 删除成功
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 删除服务项目
+      tags:
+      - 服务管理
+    get:
+      consumes:
+      - application/json
+      description: 根据ID获取服务项目详情
+      parameters:
+      - description: 服务项目ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 获取详情
+      tags:
+      - 服务管理
+    put:
+      consumes:
+      - application/json
+      description: 根据ID更新服务项目信息
+      parameters:
+      - description: 服务项目ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 服务项目信息
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.Service'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 更新成功
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 更新服务项目
+      tags:
+      - 服务管理
+  /services/customer-service/{id}/end:
+    put:
+      consumes:
+      - application/json
+      description: 根据购买记录ID手动结束一项服务
+      parameters:
+      - description: 购买记录ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 结束信息
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.EndServiceRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 结束成功
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 结束客户服务
+      tags:
+      - 服务管理
+  /services/customer/{customer_id}:
+    get:
+      consumes:
+      - application/json
+      description: 获取指定客户已购买的服务列表
+      parameters:
+      - description: 客户ID
+        in: path
+        name: customer_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 获取客户服务列表
+      tags:
+      - 服务管理
   /services/purchase:
     post:
       consumes:
@@ -374,7 +2284,7 @@ paths:
         name: request
         required: true
         schema:
-          type: object
+          $ref: '#/definitions/domain.PurchaseServiceRequest'
       produces:
       - application/json
       responses:
@@ -391,6 +2301,88 @@ paths:
       summary: 客户购买服务
       tags:
       - 服务管理
+  /stats/summary:
+    get:
+      description: 获取当前系统的统计概览数据，包括报警统计等
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 获取统计概览
+      tags:
+      - 统计分析
+  /stats/trend:
+    get:
+      description: 获取最近24小时的报警趋势分析数据
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 获取趋势分析
+      tags:
+      - 统计分析
+  /upload/image:
+    post:
+      consumes:
+      - multipart/form-data
+      description: 上传图片文件
+      parameters:
+      - description: 图片文件
+        in: formData
+        name: file
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 上传成功
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 上传失败
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 上传图片
+      tags:
+      - 文件上传
+  /upload/video:
+    post:
+      consumes:
+      - multipart/form-data
+      description: 上传视频文件
+      parameters:
+      - description: 视频文件
+        in: formData
+        name: file
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 上传成功
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 上传失败
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 上传视频
+      tags:
+      - 文件上传
   /user/login:
     post:
       consumes:
