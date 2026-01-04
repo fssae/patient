@@ -62,6 +62,16 @@ type Bed struct {
 	CreatedAt  time.Time          `json:"created_at" bson:"created_at"`
 	UpdatedAt  time.Time          `json:"updated_at" bson:"updated_at"`
 }
+type BedResponse struct {
+	ID           primitive.ObjectID `json:"id,omitempty" bson:"_id,omitempty"`
+	RoomID       primitive.ObjectID `json:"room_id" bson:"room_id" binding:"required"`
+	Number       string             `json:"number" bson:"number" binding:"required"`            // 床位号，如 "A101-1"
+	Status       string             `json:"status" bson:"status"`                               // 状态："空闲"/"占用"/"维护中"
+	CustomerID   primitive.ObjectID `json:"customer_id,omitempty" bson:"customer_id,omitempty"` // 当前入住客户ID
+	CustomerName string             `json:"customer_name"`
+	CreatedAt    time.Time          `json:"created_at" bson:"created_at"`
+	UpdatedAt    time.Time          `json:"updated_at" bson:"updated_at"`
+}
 type CreateBed struct {
 	RoomId string `json:"room_id"`
 	Number string `json:"number"`
