@@ -29,6 +29,33 @@ func NewCustomerService(customerRepo repository.CustomerRepository, userRepo rep
 	}
 }
 
+// GetNameAndID 获取客户名称和ID列表
+func (s *CustomerService) GetListNameAndID(ctx context.Context) ([]*domain.CustomerNameID, error) {
+	// 获取客户列表
+	customers, total, err := s.customerRepo.FindList(ctx, bson.M{}, 0, 0) // 这里假设我们想要获取所有客户，所以skip和limit都设置为0
+	if err != nil {
+		return nil, err
+	}
+
+	// 构建名称和ID的切片
+	nameIDList := make([]*domain.CustomerNameID, 0, total)
+	for _, customer := range customers {
+		nameID := &domain.CustomerNameID{
+			ID:   customer.ID,
+			Name: customer.Name,
+		}
+		nameIDList = append(nameIDList, nameID)
+	}
+
+	return nameIDList, nil
+}
+
+// 定义domain.CustomerNameID结构体，用于封装客户的ID和Name
+type CustomerNameID struct {
+	ID   primitive.ObjectID `bson:"_id"`
+	Name string             `bson:"name"`
+}
+
 // Create 创建客户
 func (s *CustomerService) Create(ctx context.Context, req *domain.Customer) error {
 	// 验证用户是否存在

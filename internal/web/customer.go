@@ -26,6 +26,7 @@ func (h *CustomerHandler) RegisterRoutes(server gin.IRouter) {
 	group := server.Group("/api/customers")
 	group.POST("", h.GetList)
 	group.GET("/:id", h.GetById)
+	group.GET("", h.GetListNameAndID)
 	group.POST("/create", h.Create)
 	group.POST("/:id", h.Update)
 	group.PUT("/:id/health-manager", h.SetHealthManager)
@@ -44,6 +45,24 @@ func (h *CustomerHandler) RegisterRoutes(server gin.IRouter) {
 // @Param        request  body      domain.Customer  true  "客户信息"
 // @Success      200      {object}  map[string]interface{}  "创建成功"
 // @Router       /customers/create [post]
+func (h *CustomerHandler) GetListNameAndID(c *gin.Context) {
+	// 返回customer的name和id
+	nameIDList, err := h.svc.GetListNameAndID(c.Request.Context())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code": 500,
+			"msg":  "获取客户名称和ID失败: " + err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code": 200,
+		"msg":  "获取成功",
+		"data": nameIDList,
+	})
+}
+
 func (h *CustomerHandler) Create(c *gin.Context) {
 	var req domain.Customer
 	if err := c.ShouldBindJSON(&req); err != nil {

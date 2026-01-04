@@ -67,6 +67,10 @@ type CreateBed struct {
 	Number string `json:"number"`
 	Status string `json:"status"`
 }
+type CustomerNameID struct {
+	ID   primitive.ObjectID `json:"id,omitempty" bson:"_id,omitempty"`
+	Name string             `json:"name"`
+}
 
 // Customer 客户（入住老人）
 type Customer struct {
