@@ -265,7 +265,7 @@ func (s *RecordService) GetByCustomerID(ctx context.Context, customerID primitiv
 }
 
 // GetCheckInList 获取入住信息列表
-func (s *RecordService) GetCheckInList(ctx context.Context, name, roomNumber, nursingLevel string, startDate, endDate string) ([]map[string]interface{}, error) {
+func (s *RecordService) GetCheckInList(ctx context.Context, name, roomNumber, nursingLevel string, startDate, endDate string, skip, limit int64) ([]map[string]interface{}, error) {
 	filter := bson.M{}
 
 	// 名字模糊查询
@@ -318,7 +318,7 @@ func (s *RecordService) GetCheckInList(ctx context.Context, name, roomNumber, nu
 	}
 
 	// 查询客户
-	customers, _, err := s.customerRepo.FindList(ctx, filter, 0, 0) // 暂未分页，全量返回
+	customers, _, err := s.customerRepo.FindList(ctx, filter, skip, limit) // 暂未分页，全量返回
 	if err != nil {
 		return nil, err
 	}
@@ -366,7 +366,7 @@ func (s *RecordService) GetCheckInList(ctx context.Context, name, roomNumber, nu
 }
 
 // GetCheckOutList 获取退住信息列表
-func (s *RecordService) GetCheckOutList(ctx context.Context, name, bedNumber, reason, startDate, endDate string) ([]map[string]interface{}, error) {
+func (s *RecordService) GetCheckOutList(ctx context.Context, name, bedId, reason, startDate, endDate string, skip, limit int64) ([]map[string]interface{}, error) {
 	filter := bson.M{
 		"type": "退住",
 	}
@@ -413,6 +413,54 @@ func (s *RecordService) GetCheckOutList(ctx context.Context, name, bedNumber, re
 		filter["note"] = bson.M{"$regex": reason, "$options": "i"}
 	}
 
+	// 如果有bedId,先根据bedId查询出所有相关的customer_id
+	// 因为Record表中没有bed_id字段,需要通过Customer表关联查询
+	if bedId != "" {
+		hex, err := primitive.ObjectIDFromHex(bedId)
+		if err != nil {
+			return nil, err
+		}
+
+		// 查询使用该床位的所有客户(包括历史客户)
+		customers, _, err := s.customerRepo.FindList(ctx, bson.M{"bed_id": hex}, skip, limit)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(customers) > 0 {
+			var customerIDs []primitive.ObjectID
+			for _, c := range customers {
+				customerIDs = append(customerIDs, c.ID)
+			}
+			// 如果已经有customer_id筛选条件,需要取交集
+			if existingFilter, ok := filter["customer_id"].(bson.M); ok {
+				// 已有customer_id筛选,需要取交集
+				if existingIDs, ok := existingFilter["$in"].([]primitive.ObjectID); ok {
+					// 计算交集
+					intersection := make([]primitive.ObjectID, 0)
+					for _, id := range customerIDs {
+						for _, existingID := range existingIDs {
+							if id == existingID {
+								intersection = append(intersection, id)
+								break
+							}
+						}
+					}
+					customerIDs = intersection
+				}
+			}
+
+			if len(customerIDs) > 0 {
+				filter["customer_id"] = bson.M{"$in": customerIDs}
+			} else {
+				// 没有匹配的客户,返回空结果
+				return []map[string]interface{}{}, nil
+			}
+		} else {
+			// 该床位没有客户,返回空结果
+			return []map[string]interface{}{}, nil
+		}
+	}
 	records, _, err := s.recordRepo.FindList(ctx, filter, 0, 0)
 	if err != nil {
 		return nil, err

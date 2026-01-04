@@ -313,8 +313,13 @@ func (h *RecordHandler) GetCheckInInfo(c *gin.Context) {
 	nursingLevel := c.Query("nursing_level")
 	startDate := c.Query("check_in_start")
 	endDate := c.Query("check_in_end")
+	skipStr := c.DefaultQuery("skip", "0")
+	limitStr := c.DefaultQuery("limit", "20")
 
-	list, err := h.svc.GetCheckInList(c.Request.Context(), name, roomNumber, nursingLevel, startDate, endDate)
+	skip, _ := strconv.ParseInt(skipStr, 10, 64)
+	limit, _ := strconv.ParseInt(limitStr, 10, 64)
+
+	list, err := h.svc.GetCheckInList(c.Request.Context(), name, roomNumber, nursingLevel, startDate, endDate, skip, limit)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code": 500,
@@ -350,8 +355,13 @@ func (h *RecordHandler) GetCheckOutList(c *gin.Context) {
 	reason := c.Query("reason")
 	startDate := c.Query("check_out_start")
 	endDate := c.Query("check_out_end")
+	skipStr := c.DefaultQuery("skip", "0")
+	limitStr := c.DefaultQuery("limit", "20")
 
-	list, err := h.svc.GetCheckOutList(c.Request.Context(), name, bedNumber, reason, startDate, endDate)
+	skip, _ := strconv.ParseInt(skipStr, 10, 64)
+	limit, _ := strconv.ParseInt(limitStr, 10, 64)
+
+	list, err := h.svc.GetCheckOutList(c.Request.Context(), name, bedNumber, reason, startDate, endDate, skip, limit)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code": 500,
