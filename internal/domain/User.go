@@ -77,9 +77,10 @@ type CreateBed struct {
 	Number string `json:"number"`
 	Status string `json:"status"`
 }
+
 type CustomerNameID struct {
 	ID   primitive.ObjectID `json:"id,omitempty" bson:"_id,omitempty"`
-	Name string             `json:"name"`
+	Name string             `json:"name" bson:"name"`
 }
 
 // Customer 客户（入住老人）
@@ -199,6 +200,12 @@ type ElderlyRegisterRequest struct {
 	DietaryType  string `json:"dietary_type" binding:"required"`  // 膳食类型
 
 	Remarks string `json:"remarks"` // 备注说明
+}
+
+// DietPlanNameID 膳食计划名称ID
+type DietPlanNameID struct {
+	ID   primitive.ObjectID `json:"id,omitempty" bson:"_id,omitempty"`
+	Name string             `json:"name" bson:"name"`
 }
 
 // DietPlan 膳食计划

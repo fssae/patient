@@ -21,6 +21,27 @@ func NewDietPlanService(repo repository.DietPlanRepository) *DietPlanService {
 	}
 }
 
+// GetListNameAndID GetNameAndID 获取饮食计划名称和ID列表
+func (s *DietPlanService) GetListNameAndID(ctx context.Context) ([]*domain.DietPlanNameID, error) {
+	// 获取饮食计划列表
+	dietPlans, total, err := s.repo.FindList(ctx, bson.M{}, 0, 0) // 这里假设我们想要获取所有饮食计划，所以查询条件为空
+	if err != nil {
+		return nil, err
+	}
+
+	// 构建名称和ID的切片
+	nameIDList := make([]*domain.DietPlanNameID, 0, total)
+	for _, dietPlan := range dietPlans {
+		nameID := &domain.DietPlanNameID{
+			ID:   dietPlan.ID,
+			Name: dietPlan.Name,
+		}
+		nameIDList = append(nameIDList, nameID)
+	}
+
+	return nameIDList, nil
+}
+
 // Create 创建膳食计划
 func (s *DietPlanService) Create(ctx context.Context, req *domain.DietPlan) error {
 	plan := &domain.DietPlan{
@@ -66,4 +87,3 @@ func (s *DietPlanService) Update(ctx context.Context, id primitive.ObjectID, req
 func (s *DietPlanService) Delete(ctx context.Context, id primitive.ObjectID) error {
 	return s.repo.Delete(ctx, id)
 }
-
