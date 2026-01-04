@@ -26,6 +26,7 @@ func (h *RecordHandler) RegisterRoutes(server gin.IRouter) {
 	group := server.Group("/api/records")
 	group.POST("/check-in", h.CheckIn)
 	group.GET("/check-in-info", h.GetCheckInInfo)
+	//TODO
 	group.POST("/check-out", h.CheckOut)
 	group.GET("/check-out-list", h.GetCheckOutList)
 	group.POST("/outgoing", h.Outgoing)
@@ -314,8 +315,13 @@ func (h *RecordHandler) GetCheckInInfo(c *gin.Context) {
 	nursingLevel := c.Query("nursing_level")
 	startDate := c.Query("check_in_start")
 	endDate := c.Query("check_in_end")
+	skipStr := c.DefaultQuery("skip", "0")
+	limitStr := c.DefaultQuery("limit", "20")
 
-	list, err := h.svc.GetCheckInList(c.Request.Context(), name, roomNumber, nursingLevel, startDate, endDate)
+	skip, _ := strconv.ParseInt(skipStr, 10, 64)
+	limit, _ := strconv.ParseInt(limitStr, 10, 64)
+
+	list, err := h.svc.GetCheckInList(c.Request.Context(), name, roomNumber, nursingLevel, startDate, endDate, skip, limit)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code": 500,
@@ -347,12 +353,17 @@ func (h *RecordHandler) GetCheckInInfo(c *gin.Context) {
 // @Router       /records/check-out-list [get]
 func (h *RecordHandler) GetCheckOutList(c *gin.Context) {
 	name := c.Query("name")
-	roomNumber := c.Query("room_number")
+	bedNumber := c.Query("bed_id")
 	reason := c.Query("reason")
 	startDate := c.Query("check_out_start")
 	endDate := c.Query("check_out_end")
+	skipStr := c.DefaultQuery("skip", "0")
+	limitStr := c.DefaultQuery("limit", "20")
 
-	list, err := h.svc.GetCheckOutList(c.Request.Context(), name, roomNumber, reason, startDate, endDate)
+	skip, _ := strconv.ParseInt(skipStr, 10, 64)
+	limit, _ := strconv.ParseInt(limitStr, 10, 64)
+
+	list, err := h.svc.GetCheckOutList(c.Request.Context(), name, bedNumber, reason, startDate, endDate, skip, limit)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code": 500,

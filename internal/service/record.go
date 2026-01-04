@@ -12,16 +12,18 @@ import (
 )
 
 type RecordService struct {
-	recordRepo   repository.RecordRepository
-	customerRepo repository.CustomerRepository
-	bedRepo      repository.BedRepository
+	recordRepo    repository.RecordRepository
+	customerRepo  repository.CustomerRepository
+	bedRepo       repository.BedRepository
+	careLevelRepo repository.CareLevelRepository
 }
 
-func NewRecordService(recordRepo repository.RecordRepository, customerRepo repository.CustomerRepository, bedRepo repository.BedRepository) *RecordService {
+func NewRecordService(recordRepo repository.RecordRepository, customerRepo repository.CustomerRepository, bedRepo repository.BedRepository, careLevelRepo repository.CareLevelRepository) *RecordService {
 	return &RecordService{
-		recordRepo:   recordRepo,
-		customerRepo: customerRepo,
-		bedRepo:      bedRepo,
+		recordRepo:    recordRepo,
+		customerRepo:  customerRepo,
+		bedRepo:       bedRepo,
+		careLevelRepo: careLevelRepo,
 	}
 }
 
@@ -263,7 +265,7 @@ func (s *RecordService) GetByCustomerID(ctx context.Context, customerID primitiv
 }
 
 // GetCheckInList 获取入住信息列表
-func (s *RecordService) GetCheckInList(ctx context.Context, name, roomNumber, nursingLevel string, startDate, endDate string) ([]map[string]interface{}, error) {
+func (s *RecordService) GetCheckInList(ctx context.Context, name, roomNumber, nursingLevel string, startDate, endDate string, skip, limit int64) ([]map[string]interface{}, error) {
 	filter := bson.M{}
 
 	// 名字模糊查询
@@ -274,33 +276,6 @@ func (s *RecordService) GetCheckInList(ctx context.Context, name, roomNumber, nu
 	// 房间号查询逻辑：Customer -> Bed -> Room
 	// 如果提供了房间号，需要先找到该房间下的所有床位ID，然后 Filter customer.bed_id IN [...]
 	if roomNumber != "" {
-		// 这里 RecordService 需要 Access RoomRepository?
-		// 目前 RecordService 只有 BedRepo.
-		// 但是 BedRepo 可以根据 FindByRoomID.
-		// 我需要先从 BedRepo 拿到所有床位，然后手动检查 Room Number?
-		// BedRepo.FindByRoomID 需要 RoomID.
-		// 我无法直接从 RecordService 查 Room (缺少 RoomRepo).
-		// 假如 Bed 有 Number 如 A101-1，可以模糊匹配 "A101" ?
-		// 如果Bed.Number设计规范为 RoomNumber-BedIndex，那可以用正则匹配 Bed ID.
-		// 但 Customer 存的是 BedID (ObjectId).
-		// 方案：注入 RoomRepo 或 BedService?
-		// 简单方案：先不依赖 RoomRepo，假设 RoomNumber 可以通过 Bed Number 匹配 (如果 Bed 存了 Number)。
-		// Bed 结构体有 RoomID 和 Number.
-		// 让我先假设可以直接按照 bed_id list 筛选.
-		// 我需要引入 RoomRepo.
-		// 或者，暂时只支持根据 Bed Number 筛选? 用户说 "Room Number".
-		// 如果没有 RoomRepo，这个需求比较难办。
-		// 让我在 NewRecordService 注入 RoomRepo?
-		// 鉴于此时修改 struct 较大，且 `bed.go` 服务里有 RoomRepo.
-		// 也许我可以使用 bedRepo.FindList(bson.M{}) 获取所有床位，然后在内存过滤 Room Number?
-		// 或者：查询所有 Bed 匹配 Number like "A101%"?
-		// 如果 Bed.Number 是 "A101-1"。
-		// 让我们尝试查询与 Bed 关联的。
-		// 1. Find all beds where Number starts with roomNumber.
-		// beds, _, _ := s.bedRepo.FindList(ctx, bson.M{"number": {$regex: "^" + roomNumber}}, 0, 0)
-		// 2. Extract IDs.
-		// 3. filter["bed_id"] = {$in: ids}
-		// 这是一个可行的方案，不需要 RoomRepo，只要 Bed Number 包含 Room Number.
 
 		bedFilter := bson.M{"number": bson.M{"$regex": "^" + roomNumber}} // 假设床位号以房间号开头
 		beds, _, err := s.bedRepo.FindList(ctx, bedFilter, 0, 0)
@@ -318,10 +293,6 @@ func (s *RecordService) GetCheckInList(ctx context.Context, name, roomNumber, nu
 		}
 	}
 
-	// 护理级别 (CareLevelID usually).
-	// 如果参数是名字，需要 LookUp. 同样缺少 Repo.
-	// 假设参数是 ID 字符串? 用户说 "护理级别"，可能是名字。
-	// 这通常需要在前端下拉选择 ID. 假设传 ID.
 	if nursingLevel != "" {
 		if id, err := primitive.ObjectIDFromHex(nursingLevel); err == nil {
 			filter["care_level_id"] = id
@@ -347,7 +318,7 @@ func (s *RecordService) GetCheckInList(ctx context.Context, name, roomNumber, nu
 	}
 
 	// 查询客户
-	customers, _, err := s.customerRepo.FindList(ctx, filter, 0, 0) // 暂未分页，全量返回
+	customers, _, err := s.customerRepo.FindList(ctx, filter, skip, limit) // 暂未分页，全量返回
 	if err != nil {
 		return nil, err
 	}
@@ -375,8 +346,18 @@ func (s *RecordService) GetCheckInList(ctx context.Context, name, roomNumber, nu
 		}
 
 		// 填充护理级别
-		// 注意: Customer 仅存储 CareLevelID，若需显示名称需关联查询或前端处理
-		item["nursing_level"] = c.CareLevelID.Hex() // 暂时返回 ID
+		// 注意: Customer 仅存储 CareLevelID，若需显示名称需关联查询
+		//这里进行关联查询
+		if c.CareLevelID.IsZero() {
+			item["nursing_level"] = "未知"
+		} else {
+			careLevel, _ := s.careLevelRepo.FindById(ctx, c.CareLevelID)
+			if careLevel != nil {
+				item["nursing_level"] = careLevel.Name
+			} else {
+				item["nursing_level"] = "未知"
+			}
+		}
 
 		results = append(results, item)
 	}
@@ -385,7 +366,7 @@ func (s *RecordService) GetCheckInList(ctx context.Context, name, roomNumber, nu
 }
 
 // GetCheckOutList 获取退住信息列表
-func (s *RecordService) GetCheckOutList(ctx context.Context, name, roomNumber, reason, startDate, endDate string) ([]map[string]interface{}, error) {
+func (s *RecordService) GetCheckOutList(ctx context.Context, name, bedId, reason, startDate, endDate string, skip, limit int64) ([]map[string]interface{}, error) {
 	filter := bson.M{
 		"type": "退住",
 	}
@@ -432,6 +413,54 @@ func (s *RecordService) GetCheckOutList(ctx context.Context, name, roomNumber, r
 		filter["note"] = bson.M{"$regex": reason, "$options": "i"}
 	}
 
+	// 如果有bedId,先根据bedId查询出所有相关的customer_id
+	// 因为Record表中没有bed_id字段,需要通过Customer表关联查询
+	if bedId != "" {
+		hex, err := primitive.ObjectIDFromHex(bedId)
+		if err != nil {
+			return nil, err
+		}
+
+		// 查询使用该床位的所有客户(包括历史客户)
+		customers, _, err := s.customerRepo.FindList(ctx, bson.M{"bed_id": hex}, skip, limit)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(customers) > 0 {
+			var customerIDs []primitive.ObjectID
+			for _, c := range customers {
+				customerIDs = append(customerIDs, c.ID)
+			}
+			// 如果已经有customer_id筛选条件,需要取交集
+			if existingFilter, ok := filter["customer_id"].(bson.M); ok {
+				// 已有customer_id筛选,需要取交集
+				if existingIDs, ok := existingFilter["$in"].([]primitive.ObjectID); ok {
+					// 计算交集
+					intersection := make([]primitive.ObjectID, 0)
+					for _, id := range customerIDs {
+						for _, existingID := range existingIDs {
+							if id == existingID {
+								intersection = append(intersection, id)
+								break
+							}
+						}
+					}
+					customerIDs = intersection
+				}
+			}
+
+			if len(customerIDs) > 0 {
+				filter["customer_id"] = bson.M{"$in": customerIDs}
+			} else {
+				// 没有匹配的客户,返回空结果
+				return []map[string]interface{}{}, nil
+			}
+		} else {
+			// 该床位没有客户,返回空结果
+			return []map[string]interface{}{}, nil
+		}
+	}
 	records, _, err := s.recordRepo.FindList(ctx, filter, 0, 0)
 	if err != nil {
 		return nil, err
@@ -446,18 +475,23 @@ func (s *RecordService) GetCheckOutList(ctx context.Context, name, roomNumber, r
 			customerName = customer.Name
 			careLevel = customer.CareLevelID.Hex() // 同样只有ID
 		}
+		careName, err := s.careLevelRepo.FindById(ctx, customer.CareLevelID)
+		if err != nil || careName == nil {
+			return nil, err
+		}
 
 		days := int(r.EndTime.Sub(r.StartTime).Hours() / 24)
 
 		item := map[string]interface{}{
-			"id":             r.ID.Hex(),
-			"customer_name":  customerName,
-			"room_number":    "-", // 记录中未存，且客户已退住，难以获取历史床位
-			"check_in_date":  r.StartTime,
-			"check_out_date": r.EndTime,
-			"days":           days,
-			"care_level":     careLevel,
-			"reason":         r.Note,
+			"id":              r.ID.Hex(),
+			"customer_name":   customerName,
+			"room_number":     "-", // 记录中未存，且客户已退住，难以获取历史床位
+			"check_in_date":   r.StartTime,
+			"check_out_date":  r.EndTime,
+			"days":            days,
+			"care_level":      careLevel,
+			"care_level_name": careName.Name,
+			"reason":          r.Note,
 		}
 		results = append(results, item)
 	}
@@ -519,12 +553,6 @@ func (s *RecordService) GetOutgoingList(ctx context.Context, name, startDate, en
 			phone = customer.ContactPhone // 使用紧急联系人电话
 		}
 
-		// 状态筛选逻辑：
-		// status: "全部", "已外出" (EndTime is zero), "已返回" (EndTime not zero)
-		// Mongo 查询 EndTime 是否存在/为零比较麻烦，通常用 $exists 或 $eq null.
-		// 但 Go Driver 读出来的 empty Time 是 zero value.
-		// 我们在内存里做这个筛选比较简单，因为 filter 只能基本筛选。
-
 		isReturned := !r.EndTime.IsZero()
 		currentStatus := "已外出"
 		if isReturned {
@@ -541,10 +569,11 @@ func (s *RecordService) GetOutgoingList(ctx context.Context, name, startDate, en
 		}
 
 		item := map[string]interface{}{
-			"id":                   r.ID.Hex(),
-			"customer_name":        customerName,
-			"contact_phone":        phone,
-			"outgoing_time":        r.StartTime,
+			"id":            r.ID.Hex(),
+			"customer_name": customerName,
+			"contact_phone": phone,
+			"outgoing_time": r.StartTime,
+			//TODO登记时候显示实际返回时间
 			"expected_return_time": "", // 暂无数据
 			"actual_return_time":   r.EndTime,
 			"status":               currentStatus,
