@@ -14,7 +14,9 @@ import (
 	"classroom-analysis/internal/service"
 	"classroom-analysis/internal/web"
 	"classroom-analysis/internal/ws"
+)
 
+import (
 	_ "classroom-analysis/docs"
 )
 
@@ -49,7 +51,9 @@ func InitWebServer() *App {
 	roomHandler := web.NewRoomHandler(roomService)
 	bedDAO := dao.NewBedDAO(database)
 	bedRepository := repository.NewBedRepository(bedDAO)
-	bedService := service.NewBedService(bedRepository, roomRepository)
+	customerDAO := dao.NewCustomerDAO(database)
+	customerRepository := repository.NewCustomerRepository(customerDAO)
+	bedService := service.NewBedService(bedRepository, roomRepository, customerRepository)
 	bedHandler := web.NewBedHandler(bedService)
 	careLevelDAO := dao.NewCareLevelDAO(database)
 	careLevelRepository := repository.NewCareLevelRepository(careLevelDAO)
@@ -59,8 +63,6 @@ func InitWebServer() *App {
 	dietPlanRepository := repository.NewDietPlanRepository(dietPlanDAO)
 	dietPlanService := service.NewDietPlanService(dietPlanRepository)
 	dietPlanHandler := web.NewDietPlanHandler(dietPlanService)
-	customerDAO := dao.NewCustomerDAO(database)
-	customerRepository := repository.NewCustomerRepository(customerDAO)
 	customerService := service.NewCustomerService(customerRepository, userRepository, bedRepository, careLevelRepository, dietPlanRepository)
 	customerHandler := web.NewCustomerHandler(customerService)
 	recordDAO := dao.NewRecordDAO(database)

@@ -13,14 +13,16 @@ import (
 )
 
 type BedService struct {
-	repo     repository.BedRepository
-	roomRepo repository.RoomRepository
+	repo         repository.BedRepository
+	roomRepo     repository.RoomRepository
+	customerRepo repository.CustomerRepository
 }
 
-func NewBedService(repo repository.BedRepository, roomRepo repository.RoomRepository) *BedService {
+func NewBedService(repo repository.BedRepository, roomRepo repository.RoomRepository, customerRepo repository.CustomerRepository) *BedService {
 	return &BedService{
-		repo:     repo,
-		roomRepo: roomRepo,
+		repo:         repo,
+		roomRepo:     roomRepo,
+		customerRepo: customerRepo,
 	}
 }
 
@@ -58,7 +60,7 @@ func (s *BedService) GetByRoomID(ctx context.Context, roomID primitive.ObjectID)
 }
 
 // GetList 获取床位列表
-func (s *BedService) GetList(ctx context.Context, roomNumber, bedNumber, status string, skip, limit int64) ([]*domain.Bed, int64, error) {
+func (s *BedService) GetList(ctx context.Context, roomNumber, bedNumber, status string, skip, limit int64) ([]*domain.BedResponse, int64, error) {
 	filter := bson.M{}
 
 	if roomNumber != "" {
@@ -71,7 +73,7 @@ func (s *BedService) GetList(ctx context.Context, roomNumber, bedNumber, status 
 			filter["room_id"] = room.ID
 		} else {
 			// 房间不存在，直接返回空结果
-			return []*domain.Bed{}, 0, nil
+			return []*domain.BedResponse{}, 0, nil
 		}
 	}
 
@@ -83,7 +85,35 @@ func (s *BedService) GetList(ctx context.Context, roomNumber, bedNumber, status 
 		filter["status"] = status
 	}
 
-	return s.repo.FindList(ctx, filter, skip, limit)
+	list, total, err := s.repo.FindList(ctx, filter, skip, limit)
+	if err != nil {
+		return nil, 0, err
+	}
+	if len(list) == 0 {
+		return []*domain.BedResponse{}, 0, nil
+	}
+	customerIds := make([]primitive.ObjectID, 0)
+	for _, v := range list {
+		if !v.CustomerID.IsZero() {
+			customerIds = append(customerIds, v.CustomerID)
+		}
+	}
+	customerMap := s.getCustomerMap(ctx, customerIds)
+	listRes := make([]*domain.BedResponse, 0, len(list))
+	for _, v := range list {
+		res := &domain.BedResponse{
+			ID:           v.ID,
+			Number:       v.Number,
+			RoomID:       v.RoomID,
+			Status:       v.Status,
+			CreatedAt:    v.CreatedAt,
+			UpdatedAt:    v.UpdatedAt,
+			CustomerID:   v.CustomerID,
+			CustomerName: customerMap[v.CustomerID],
+		}
+		listRes = append(listRes, res)
+	}
+	return listRes, total, nil
 }
 
 // AssignToCustomer 分配床位给客户
@@ -137,6 +167,23 @@ func (s *BedService) Delete(ctx context.Context, id primitive.ObjectID) error {
 		return errors.New("床位已被占用，无法删除")
 	}
 	return s.repo.Delete(ctx, id)
+}
+func (s *BedService) getCustomerMap(ctx context.Context, ids []primitive.ObjectID) map[primitive.ObjectID]string {
+	result := make(map[primitive.ObjectID]string)
+	if len(ids) == 0 {
+		return result
+	}
+
+	filter := bson.M{"_id": bson.M{"$in": ids}}
+	CustomerList, _, err := s.customerRepo.FindList(ctx, filter, 0, int64(len(ids)))
+	if err != nil {
+		return result
+	}
+
+	for _, customer := range CustomerList {
+		result[customer.ID] = customer.Name
+	}
+	return result
 }
 
 // GetBedOptions 获取床位递归选项列表 (房间 -> 床位)
