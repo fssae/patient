@@ -12,16 +12,18 @@ import (
 )
 
 type RecordService struct {
-	recordRepo   repository.RecordRepository
-	customerRepo repository.CustomerRepository
-	bedRepo      repository.BedRepository
+	recordRepo    repository.RecordRepository
+	customerRepo  repository.CustomerRepository
+	bedRepo       repository.BedRepository
+	careLevelRepo repository.CareLevelRepository
 }
 
-func NewRecordService(recordRepo repository.RecordRepository, customerRepo repository.CustomerRepository, bedRepo repository.BedRepository) *RecordService {
+func NewRecordService(recordRepo repository.RecordRepository, customerRepo repository.CustomerRepository, bedRepo repository.BedRepository, careLevelRepo repository.CareLevelRepository) *RecordService {
 	return &RecordService{
-		recordRepo:   recordRepo,
-		customerRepo: customerRepo,
-		bedRepo:      bedRepo,
+		recordRepo:    recordRepo,
+		customerRepo:  customerRepo,
+		bedRepo:       bedRepo,
+		careLevelRepo: careLevelRepo,
 	}
 }
 
@@ -274,33 +276,6 @@ func (s *RecordService) GetCheckInList(ctx context.Context, name, roomNumber, nu
 	// 房间号查询逻辑：Customer -> Bed -> Room
 	// 如果提供了房间号，需要先找到该房间下的所有床位ID，然后 Filter customer.bed_id IN [...]
 	if roomNumber != "" {
-		// 这里 RecordService 需要 Access RoomRepository?
-		// 目前 RecordService 只有 BedRepo.
-		// 但是 BedRepo 可以根据 FindByRoomID.
-		// 我需要先从 BedRepo 拿到所有床位，然后手动检查 Room Number?
-		// BedRepo.FindByRoomID 需要 RoomID.
-		// 我无法直接从 RecordService 查 Room (缺少 RoomRepo).
-		// 假如 Bed 有 Number 如 A101-1，可以模糊匹配 "A101" ?
-		// 如果Bed.Number设计规范为 RoomNumber-BedIndex，那可以用正则匹配 Bed ID.
-		// 但 Customer 存的是 BedID (ObjectId).
-		// 方案：注入 RoomRepo 或 BedService?
-		// 简单方案：先不依赖 RoomRepo，假设 RoomNumber 可以通过 Bed Number 匹配 (如果 Bed 存了 Number)。
-		// Bed 结构体有 RoomID 和 Number.
-		// 让我先假设可以直接按照 bed_id list 筛选.
-		// 我需要引入 RoomRepo.
-		// 或者，暂时只支持根据 Bed Number 筛选? 用户说 "Room Number".
-		// 如果没有 RoomRepo，这个需求比较难办。
-		// 让我在 NewRecordService 注入 RoomRepo?
-		// 鉴于此时修改 struct 较大，且 `bed.go` 服务里有 RoomRepo.
-		// 也许我可以使用 bedRepo.FindList(bson.M{}) 获取所有床位，然后在内存过滤 Room Number?
-		// 或者：查询所有 Bed 匹配 Number like "A101%"?
-		// 如果 Bed.Number 是 "A101-1"。
-		// 让我们尝试查询与 Bed 关联的。
-		// 1. Find all beds where Number starts with roomNumber.
-		// beds, _, _ := s.bedRepo.FindList(ctx, bson.M{"number": {$regex: "^" + roomNumber}}, 0, 0)
-		// 2. Extract IDs.
-		// 3. filter["bed_id"] = {$in: ids}
-		// 这是一个可行的方案，不需要 RoomRepo，只要 Bed Number 包含 Room Number.
 
 		bedFilter := bson.M{"number": bson.M{"$regex": "^" + roomNumber}} // 假设床位号以房间号开头
 		beds, _, err := s.bedRepo.FindList(ctx, bedFilter, 0, 0)
@@ -318,10 +293,6 @@ func (s *RecordService) GetCheckInList(ctx context.Context, name, roomNumber, nu
 		}
 	}
 
-	// 护理级别 (CareLevelID usually).
-	// 如果参数是名字，需要 LookUp. 同样缺少 Repo.
-	// 假设参数是 ID 字符串? 用户说 "护理级别"，可能是名字。
-	// 这通常需要在前端下拉选择 ID. 假设传 ID.
 	if nursingLevel != "" {
 		if id, err := primitive.ObjectIDFromHex(nursingLevel); err == nil {
 			filter["care_level_id"] = id
@@ -375,8 +346,18 @@ func (s *RecordService) GetCheckInList(ctx context.Context, name, roomNumber, nu
 		}
 
 		// 填充护理级别
-		// 注意: Customer 仅存储 CareLevelID，若需显示名称需关联查询或前端处理
-		item["nursing_level"] = c.CareLevelID.Hex() // 暂时返回 ID
+		// 注意: Customer 仅存储 CareLevelID，若需显示名称需关联查询
+		//这里进行关联查询
+		if c.CareLevelID.IsZero() {
+			item["nursing_level"] = "未知"
+		} else {
+			careLevel, _ := s.careLevelRepo.FindById(ctx, c.CareLevelID)
+			if careLevel != nil {
+				item["nursing_level"] = careLevel.Name
+			} else {
+				item["nursing_level"] = "未知"
+			}
+		}
 
 		results = append(results, item)
 	}

@@ -67,7 +67,7 @@ func InitWebServer() *App {
 	customerHandler := web.NewCustomerHandler(customerService)
 	recordDAO := dao.NewRecordDAO(database)
 	recordRepository := repository.NewRecordRepository(recordDAO)
-	recordService := service.NewRecordService(recordRepository, customerRepository, bedRepository)
+	recordService := service.NewRecordService(recordRepository, customerRepository, bedRepository, careLevelRepository)
 	recordHandler := web.NewRecordHandler(recordService)
 	serviceDAO := dao.NewServiceDAO(database)
 	serviceRepository := repository.NewServiceRepository(serviceDAO)
