@@ -62,7 +62,7 @@ func (s *CustomerService) GetById(ctx context.Context, id primitive.ObjectID) (*
 }
 
 // GetList 获取客户列表
-func (s *CustomerService) GetList(ctx context.Context, query domain.CustomerQuery, skip, limit int64) ([]*domain.Customer, int64, error) {
+func (s *CustomerService) GetList(ctx context.Context, query domain.CustomerQuery, skip, limit int64) ([]*domain.CustomerResponse, int64, error) {
 	filter := bson.M{}
 
 	// 精确匹配
@@ -117,7 +117,133 @@ func (s *CustomerService) GetList(ctx context.Context, query domain.CustomerQuer
 		}
 	}
 
-	return s.customerRepo.FindList(ctx, filter, skip, limit)
+	// 1. 查询客户列表
+	list, total, err := s.customerRepo.FindList(ctx, filter, skip, limit)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	if len(list) == 0 {
+		return []*domain.CustomerResponse{}, total, nil
+	}
+
+	// 2. 收集所有关联 ID（去重）
+	bedIDs := make([]primitive.ObjectID, 0)
+	careIDs := make([]primitive.ObjectID, 0)
+	dietIDs := make([]primitive.ObjectID, 0)
+
+	for _, v := range list {
+		if !v.BedID.IsZero() {
+			bedIDs = append(bedIDs, v.BedID)
+		}
+		if !v.CareLevelID.IsZero() {
+			careIDs = append(careIDs, v.CareLevelID)
+		}
+		if !v.DietPlanID.IsZero() {
+			dietIDs = append(dietIDs, v.DietPlanID)
+		}
+	}
+
+	// 3. 批量查询关联表并构建 Map
+	bedMap := s.getBedMap(ctx, bedIDs)
+	careMap := s.getCareMap(ctx, careIDs)
+	dietMap := s.getDietMap(ctx, dietIDs)
+
+	// 4. 组装结果
+	listRes := make([]*domain.CustomerResponse, 0, len(list))
+	for _, v := range list {
+		res := &domain.CustomerResponse{
+			ID:              v.ID,
+			UserID:          v.UserID,
+			Name:            v.Name,
+			Age:             v.Age,
+			Gender:          v.Gender,
+			Phone:           v.Phone,
+			IDCard:          v.IDCard,
+			BedID:           v.BedID,
+			Bed:             bedMap[v.BedID],
+			DietPlanID:      v.DietPlanID,
+			DietPlan:        dietMap[v.DietPlanID],
+			CareLevelID:     v.CareLevelID,
+			CareLevel:       careMap[v.CareLevelID],
+			HealthManagerID: v.HealthManagerID,
+			HealthManager:   v.HealthManager,
+			Status:          v.Status,
+			CheckInDate:     v.CheckInDate,
+			CheckOutDate:    v.CheckOutDate,
+			HealthLevel:     v.HealthLevel,
+			MedicalHistory:  v.MedicalHistory,
+			Medication:      v.Medication,
+			AllergyHistory:  v.AllergyHistory,
+			ContactName:     v.ContactName,
+			Relationship:    v.Relationship,
+			ContactPhone:    v.ContactPhone,
+			ContactAddress:  v.ContactAddress,
+			Remarks:         v.Remarks,
+			CreatedAt:       v.CreatedAt,
+			UpdatedAt:       v.UpdatedAt,
+		}
+		listRes = append(listRes, res)
+	}
+
+	return listRes, total, nil
+}
+
+// getBedMap 批量查询床位信息并构建 ID->Name 映射
+func (s *CustomerService) getBedMap(ctx context.Context, ids []primitive.ObjectID) map[primitive.ObjectID]string {
+	result := make(map[primitive.ObjectID]string)
+	if len(ids) == 0 {
+		return result
+	}
+
+	filter := bson.M{"_id": bson.M{"$in": ids}}
+	beds, _, err := s.bedRepo.FindList(ctx, filter, 0, int64(len(ids)))
+	if err != nil {
+		return result
+	}
+
+	for _, bed := range beds {
+		result[bed.ID] = bed.Number
+	}
+	return result
+}
+
+// getCareMap 批量查询护理级别信息并构建 ID->Name 映射
+func (s *CustomerService) getCareMap(ctx context.Context, ids []primitive.ObjectID) map[primitive.ObjectID]string {
+	result := make(map[primitive.ObjectID]string)
+	if len(ids) == 0 {
+		return result
+	}
+
+	filter := bson.M{"_id": bson.M{"$in": ids}}
+	careLevels, _, err := s.careRepo.FindList(ctx, filter, 0, int64(len(ids)))
+	if err != nil {
+		return result
+	}
+
+	for _, care := range careLevels {
+		result[care.ID] = care.Name
+	}
+	return result
+}
+
+// getDietMap 批量查询膳食计划信息并构建 ID->Name 映射
+func (s *CustomerService) getDietMap(ctx context.Context, ids []primitive.ObjectID) map[primitive.ObjectID]string {
+	result := make(map[primitive.ObjectID]string)
+	if len(ids) == 0 {
+		return result
+	}
+
+	filter := bson.M{"_id": bson.M{"$in": ids}}
+	dietPlans, _, err := s.dietRepo.FindList(ctx, filter, 0, int64(len(ids)))
+	if err != nil {
+		return result
+	}
+
+	for _, diet := range dietPlans {
+		result[diet.ID] = diet.Name
+	}
+	return result
 }
 
 // Update 更新客户信息 (支持部分字段更新)

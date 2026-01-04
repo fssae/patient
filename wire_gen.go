@@ -14,9 +14,7 @@ import (
 	"classroom-analysis/internal/service"
 	"classroom-analysis/internal/web"
 	"classroom-analysis/internal/ws"
-)
 
-import (
 	_ "classroom-analysis/docs"
 )
 

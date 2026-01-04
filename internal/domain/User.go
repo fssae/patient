@@ -103,6 +103,43 @@ type Customer struct {
 	CreatedAt time.Time `json:"created_at" bson:"created_at"`
 	UpdatedAt time.Time `json:"updated_at" bson:"updated_at"`
 }
+type CustomerResponse struct {
+	ID              primitive.ObjectID `json:"id,omitempty" bson:"_id,omitempty"`
+	UserID          primitive.ObjectID `json:"user_id" bson:"user_id"` // 关联注册用户
+	Name            string             `json:"name" bson:"name" binding:"required"`
+	Age             int                `json:"age" bson:"age" binding:"required"`
+	Gender          string             `json:"gender" bson:"gender" binding:"required"`
+	Phone           string             `json:"phone" bson:"phone"`
+	IDCard          string             `json:"id_card" bson:"id_card"`                   // 身份证号
+	BedID           primitive.ObjectID `json:"bed_id,omitempty" bson:"bed_id,omitempty"` // 关联床位
+	Bed             string             `json:"bed_name,omitempty" bson:"bed_name,omitempty"`
+	DietPlanID      primitive.ObjectID `json:"diet_plan_id,omitempty" bson:"diet_plan_id,omitempty"` // 膳食计划ID
+	DietPlan        string             `json:"diet_plan_name,omitempty" bson:"diet_plan_name,omitempty"`
+	CareLevelID     primitive.ObjectID `json:"care_level_id,omitempty" bson:"care_level_id,omitempty"` // 护理级别ID
+	CareLevel       string             `json:"care_level_name,omitempty" bson:"care_level_name,omitempty"`
+	HealthManagerID primitive.ObjectID `json:"health_manager_id,omitempty" bson:"health_manager_id,omitempty"` // 健康管家ID
+	HealthManager   string             `json:"health_manager" bson:"health_manager"`                           // 健康管家姓名
+	Status          string             `json:"status" bson:"status"`                                           // 状态："入住中"/"已退住"/"外出中"
+	CheckInDate     time.Time          `json:"check_in_date,omitempty" bson:"check_in_date,omitempty"`         // 入住日期
+	CheckOutDate    time.Time          `json:"check_out_date,omitempty" bson:"check_out_date,omitempty"`       // 退住日期
+
+	// 健康状况
+	HealthLevel    string `json:"health_level" bson:"health_level"`       // 健康等级
+	MedicalHistory string `json:"medical_history" bson:"medical_history"` // 既往病史
+	Medication     string `json:"medication" bson:"medication"`           // 用药情况
+	AllergyHistory string `json:"allergy_history" bson:"allergy_history"` // 过敏史
+
+	// 紧急联系人
+	ContactName    string `json:"contact_name" bson:"contact_name"`       // 联系人姓名
+	Relationship   string `json:"relationship" bson:"relationship"`       // 关系
+	ContactPhone   string `json:"contact_phone" bson:"contact_phone"`     // 联系电话
+	ContactAddress string `json:"contact_address" bson:"contact_address"` // 联系地址
+
+	Remarks string `json:"remarks" bson:"remarks"` // 备注说明
+
+	CreatedAt time.Time `json:"created_at" bson:"created_at"`
+	UpdatedAt time.Time `json:"updated_at" bson:"updated_at"`
+}
 
 // CustomerQuery 客户查询条件
 type CustomerQuery struct {

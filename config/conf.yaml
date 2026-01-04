@@ -36,7 +36,7 @@ kafka:
     required_acks: "WaitForAll"
   # 消费者配置
   consumer:
-    group_session_timeout: 5m
-    heartbeat_interval: 10s
+    group_session_timeout: 30s  # 会话超时(从 5m 降低到 30s)
+    heartbeat_interval: 3s      # 心跳间隔(从 10s 降低到 3s)
     auto_offset_reset: "oldest"
-    rebalance_timeout: 5m
+    rebalance_timeout: 60s      # 重平衡超时(从 5m 降低到 60s)
