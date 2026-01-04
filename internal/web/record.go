@@ -25,6 +25,7 @@ func (h *RecordHandler) RegisterRoutes(server gin.IRouter) {
 	group := server.Group("/api/records")
 	group.POST("/check-in", h.CheckIn)
 	group.GET("/check-in-info", h.GetCheckInInfo)
+	//TODO
 	group.POST("/check-out", h.CheckOut)
 	group.GET("/check-out-list", h.GetCheckOutList)
 	group.POST("/outgoing", h.Outgoing)
@@ -345,12 +346,12 @@ func (h *RecordHandler) GetCheckInInfo(c *gin.Context) {
 // @Router       /records/check-out-list [get]
 func (h *RecordHandler) GetCheckOutList(c *gin.Context) {
 	name := c.Query("name")
-	roomNumber := c.Query("room_number")
+	bedNumber := c.Query("bed_id")
 	reason := c.Query("reason")
 	startDate := c.Query("check_out_start")
 	endDate := c.Query("check_out_end")
 
-	list, err := h.svc.GetCheckOutList(c.Request.Context(), name, roomNumber, reason, startDate, endDate)
+	list, err := h.svc.GetCheckOutList(c.Request.Context(), name, bedNumber, reason, startDate, endDate)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code": 500,

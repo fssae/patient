@@ -366,7 +366,7 @@ func (s *RecordService) GetCheckInList(ctx context.Context, name, roomNumber, nu
 }
 
 // GetCheckOutList 获取退住信息列表
-func (s *RecordService) GetCheckOutList(ctx context.Context, name, roomNumber, reason, startDate, endDate string) ([]map[string]interface{}, error) {
+func (s *RecordService) GetCheckOutList(ctx context.Context, name, bedNumber, reason, startDate, endDate string) ([]map[string]interface{}, error) {
 	filter := bson.M{
 		"type": "退住",
 	}
@@ -427,18 +427,23 @@ func (s *RecordService) GetCheckOutList(ctx context.Context, name, roomNumber, r
 			customerName = customer.Name
 			careLevel = customer.CareLevelID.Hex() // 同样只有ID
 		}
+		careName, err := s.careLevelRepo.FindById(ctx, customer.CareLevelID)
+		if err != nil || careName == nil {
+			return nil, err
+		}
 
 		days := int(r.EndTime.Sub(r.StartTime).Hours() / 24)
 
 		item := map[string]interface{}{
-			"id":             r.ID.Hex(),
-			"customer_name":  customerName,
-			"room_number":    "-", // 记录中未存，且客户已退住，难以获取历史床位
-			"check_in_date":  r.StartTime,
-			"check_out_date": r.EndTime,
-			"days":           days,
-			"care_level":     careLevel,
-			"reason":         r.Note,
+			"id":              r.ID.Hex(),
+			"customer_name":   customerName,
+			"room_number":     "-", // 记录中未存，且客户已退住，难以获取历史床位
+			"check_in_date":   r.StartTime,
+			"check_out_date":  r.EndTime,
+			"days":            days,
+			"care_level":      careLevel,
+			"care_level_name": careName.Name,
+			"reason":          r.Note,
 		}
 		results = append(results, item)
 	}
@@ -500,12 +505,6 @@ func (s *RecordService) GetOutgoingList(ctx context.Context, name, startDate, en
 			phone = customer.ContactPhone // 使用紧急联系人电话
 		}
 
-		// 状态筛选逻辑：
-		// status: "全部", "已外出" (EndTime is zero), "已返回" (EndTime not zero)
-		// Mongo 查询 EndTime 是否存在/为零比较麻烦，通常用 $exists 或 $eq null.
-		// 但 Go Driver 读出来的 empty Time 是 zero value.
-		// 我们在内存里做这个筛选比较简单，因为 filter 只能基本筛选。
-
 		isReturned := !r.EndTime.IsZero()
 		currentStatus := "已外出"
 		if isReturned {
@@ -522,10 +521,11 @@ func (s *RecordService) GetOutgoingList(ctx context.Context, name, startDate, en
 		}
 
 		item := map[string]interface{}{
-			"id":                   r.ID.Hex(),
-			"customer_name":        customerName,
-			"contact_phone":        phone,
-			"outgoing_time":        r.StartTime,
+			"id":            r.ID.Hex(),
+			"customer_name": customerName,
+			"contact_phone": phone,
+			"outgoing_time": r.StartTime,
+			//TODO登记时候显示实际返回时间
 			"expected_return_time": "", // 暂无数据
 			"actual_return_time":   r.EndTime,
 			"status":               currentStatus,
