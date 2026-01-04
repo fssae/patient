@@ -24,6 +24,7 @@ func NewDietPlanHandler(svc *service.DietPlanService) *DietPlanHandler {
 func (h *DietPlanHandler) RegisterRoutes(server gin.IRouter) {
 	group := server.Group("/api/diet-plans")
 	group.GET("", h.GetList)
+	group.GET("/dietPlan-name-id", h.GetListNameAndID)
 	group.GET("/:id", h.GetById)
 	group.POST("/create", h.Create)
 	group.PUT("/:id", h.Update)
@@ -39,6 +40,23 @@ func (h *DietPlanHandler) RegisterRoutes(server gin.IRouter) {
 // @Param        request  body      domain.DietPlan  true  "计划信息"
 // @Success      200      {object}  map[string]interface{}  "创建成功"
 // @Router       /diet-plans/create [post]
+func (h *DietPlanHandler) GetListNameAndID(c *gin.Context) {
+	nameIDList, err := h.svc.GetListNameAndID(c.Request.Context())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code": 500,
+			"msg":  "获取客户名称和ID失败: " + err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code": 200,
+		"msg":  "获取成功",
+		"data": nameIDList,
+	})
+}
+
 func (h *DietPlanHandler) Create(c *gin.Context) {
 	var req domain.DietPlan
 	if err := c.ShouldBindJSON(&req); err != nil {

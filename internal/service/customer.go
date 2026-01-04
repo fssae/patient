@@ -50,12 +50,6 @@ func (s *CustomerService) GetListNameAndID(ctx context.Context) ([]*domain.Custo
 	return nameIDList, nil
 }
 
-// 定义domain.CustomerNameID结构体，用于封装客户的ID和Name
-type CustomerNameID struct {
-	ID   primitive.ObjectID `bson:"_id"`
-	Name string             `bson:"name"`
-}
-
 // Create 创建客户
 func (s *CustomerService) Create(ctx context.Context, req *domain.Customer) error {
 	// 验证用户是否存在
