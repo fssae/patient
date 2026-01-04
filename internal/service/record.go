@@ -556,3 +556,33 @@ func (s *RecordService) GetOutgoingList(ctx context.Context, name, startDate, en
 	}
 	return results, nil
 }
+
+// UpdateRecord 更新客户的记录
+func (s *RecordService) UpdateRecord(ctx context.Context, record *domain.Record, customerID primitive.ObjectID, elderId string) error {
+	// 检查记录是否存在
+	_, err := s.recordRepo.FindById(ctx, record.ID)
+	if err != nil {
+		return err
+	}
+	//更新records
+	if err := s.recordRepo.Update(ctx, record); err != nil {
+		return err
+	}
+
+	// 检查customer是否存在该用户
+	customer, err := s.customerRepo.FindByUserID(ctx, customerID)
+	if err != nil {
+		return err
+	}
+	if customer == nil {
+		return errors.New("客户未找到")
+	}
+	// 更新客户名称
+	updates := map[string]interface{}{
+		"name": elderId,
+	}
+	if err := s.customerRepo.Update(ctx, customer.ID, updates); err != nil {
+		return err
+	}
+	return nil
+}
