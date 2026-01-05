@@ -65,6 +65,7 @@ type Bed struct {
 type BedResponse struct {
 	ID           primitive.ObjectID `json:"id,omitempty" bson:"_id,omitempty"`
 	RoomID       primitive.ObjectID `json:"room_id" bson:"room_id" binding:"required"`
+	RoomNumber   string             `json:"room_number"`
 	Number       string             `json:"number" bson:"number" binding:"required"`            // 床位号，如 "A101-1"
 	Status       string             `json:"status" bson:"status"`                               // 状态："空闲"/"占用"/"维护中"
 	CustomerID   primitive.ObjectID `json:"customer_id,omitempty" bson:"customer_id,omitempty"` // 当前入住客户ID
