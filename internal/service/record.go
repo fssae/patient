@@ -5,7 +5,7 @@ import (
 	"classroom-analysis/internal/repository"
 	"context"
 	"errors"
-	"fmt"
+
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -227,9 +227,15 @@ func (s *RecordService) Outgoing(ctx context.Context, customerID primitive.Objec
 }
 
 // Return 外出返回
-func (s *RecordService) Return(ctx context.Context, customerID primitive.ObjectID, note, createdBy string) error {
+func (s *RecordService) Return(ctx context.Context, recordsID primitive.ObjectID, note, createdBy string) error {
+	//查找纪律
+	record, err := s.recordRepo.FindById(ctx, recordsID)
+	if err != nil {
+		return err
+	}
+
 	// 验证客户是否存在
-	customer, err := s.customerRepo.FindById(ctx, customerID)
+	customer, err := s.customerRepo.FindById(ctx, record.CustomerID)
 	if err != nil {
 		return err
 	}
@@ -246,13 +252,13 @@ func (s *RecordService) Return(ctx context.Context, customerID primitive.ObjectI
 		"updated_at":   time.Now(),
 		"check_out_at": time.Time{},
 	}
-	err = s.customerRepo.Update(ctx, customerID, updates)
+	err = s.customerRepo.Update(ctx, customer.ID, updates)
 	if err != nil {
 		return err
 	}
 
 	// 查找最近的外出记录并更新
-	records, err := s.recordRepo.FindByCustomerID(ctx, customerID)
+	records, err := s.recordRepo.FindByCustomerID(ctx, record.CustomerID)
 	if err != nil {
 		return err
 	}
@@ -262,6 +268,7 @@ func (s *RecordService) Return(ctx context.Context, customerID primitive.ObjectI
 		if records[i].Type == "外出" && records[i].EndTime.IsZero() {
 			records[i].EndTime = time.Now()
 			records[i].Note = note
+			records[i].Type = "入住" // 标记为已返回入住
 			return s.recordRepo.Update(ctx, records[i])
 		}
 	}
@@ -666,7 +673,6 @@ func (s *RecordService) UpdateOutgoingRecord(ctx context.Context, req *domain.Up
 		}
 		record.ExpectedReturnTime = expectedReturnTime
 
-		fmt.Println("Parsed ExpectedReturnTime:", expectedReturnTime)
 	}
 
 	// 更新records

@@ -383,9 +383,9 @@ type OutgoingRequest struct {
 }
 
 type ReturnRequest struct {
-	CustomerID string `json:"customer_id" binding:"required"`
-	Note       string `json:"note"`
-	CreatedBy  string `json:"created_by" binding:"required"`
+	RecordsID string `json:"id" binding:"required"`
+	Note      string `json:"note"`
+	CreatedBy string `json:"created_by" `
 }
 
 type EndServiceRequest struct {

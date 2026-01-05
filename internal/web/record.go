@@ -191,7 +191,7 @@ func (h *RecordHandler) Return(c *gin.Context) {
 		return
 	}
 
-	customerID, err := primitive.ObjectIDFromHex(req.CustomerID)
+	RecordsID, err := primitive.ObjectIDFromHex(req.RecordsID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code": 400,
@@ -200,7 +200,7 @@ func (h *RecordHandler) Return(c *gin.Context) {
 		return
 	}
 
-	err = h.svc.Return(c.Request.Context(), customerID, req.Note, req.CreatedBy)
+	err = h.svc.Return(c.Request.Context(), RecordsID, req.Note, req.CreatedBy)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code": 400,
