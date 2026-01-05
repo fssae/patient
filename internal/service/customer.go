@@ -327,6 +327,23 @@ func (s *CustomerService) Update(ctx context.Context, id primitive.ObjectID, upd
 				if err := s.bedRepo.AssignToCustomer(ctx, newBedID, id); err != nil {
 					return err
 				}
+				// 更新床位与customer的关联关系
+				// 找customer中的user_id
+				user, err := s.customerRepo.FindById(ctx, id)
+				if err != nil {
+					return err
+				}
+				if user == nil {
+					return errors.New("用户不存在")
+				}
+				// 更新床位与customer的关联关系
+				bed = &domain.Bed{
+					ID:         newBedID,
+					CustomerID: user.UserID,
+				}
+				if err := s.bedRepo.Update(ctx, bed); err != nil {
+					return err
+				}
 
 			}
 

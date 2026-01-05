@@ -598,6 +598,7 @@ func (s *RecordService) GetOutgoingList(ctx context.Context, name, startDate, en
 			"destination":          r.Note, // 备注作为目的地
 			// "customer_id" 用于前端操作 (登记返回等)?
 			"customer_id": r.CustomerID.Hex(),
+			"escort":      r.Escort,
 		}
 		results = append(results, item)
 	}
