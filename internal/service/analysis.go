@@ -4,7 +4,10 @@ import (
 	"classroom-analysis/internal/domain"
 	"classroom-analysis/internal/repository"
 	"context"
+	"errors"
 	"time"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // AnalysisService 定义了分析相关的业务接口
@@ -13,6 +16,8 @@ type AnalysisService interface {
 	RecordAnalysis(ctx context.Context, msg *domain.AnalysisLog) error
 	// GetAnalysisLogs 分页获取分析日志
 	GetAnalysisLogs(ctx context.Context, page, size int64) ([]*domain.AnalysisLog, int64, error)
+	// ResolveAlert 解除告警
+	ResolveAlert(ctx context.Context, alertID string) error
 }
 
 type analysisService struct {
@@ -38,4 +43,23 @@ func (s *analysisService) GetAnalysisLogs(ctx context.Context, page, size int64)
 		size = 20
 	}
 	return s.repo.GetList(ctx, page, size)
+}
+
+func (s *analysisService) ResolveAlert(ctx context.Context, alertID string) error {
+	id, err := primitive.ObjectIDFromHex(alertID)
+	if err != nil {
+		return errors.New("无效的告警ID")
+	}
+
+	// 检查告警是否存在
+	alert, err := s.repo.FindByID(ctx, id)
+	if err != nil {
+		return err
+	}
+	if alert == nil {
+		return errors.New("告警不存在")
+	}
+
+	// 更新解除状态
+	return s.repo.UpdateResolveStatus(ctx, id, true)
 }

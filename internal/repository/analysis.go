@@ -6,11 +6,14 @@ import (
 	"context"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type AnalysisRepository interface {
 	Save(ctx context.Context, log *domain.AnalysisLog) error
 	GetList(ctx context.Context, page, size int64) ([]*domain.AnalysisLog, int64, error)
+	FindByID(ctx context.Context, id primitive.ObjectID) (*domain.AnalysisLog, error)
+	UpdateResolveStatus(ctx context.Context, id primitive.ObjectID, resolved bool) error
 }
 
 type analysisRepository struct {
@@ -31,4 +34,13 @@ func (r *analysisRepository) GetList(ctx context.Context, page, size int64) ([]*
 	// Sort by created_at descending
 	sort := bson.D{{Key: "created_at", Value: -1}}
 	return r.dao.FindList(ctx, bson.M{}, skip, size, sort)
+}
+
+func (r *analysisRepository) FindByID(ctx context.Context, id primitive.ObjectID) (*domain.AnalysisLog, error) {
+	return r.dao.FindOne(ctx, bson.M{"_id": id})
+}
+
+func (r *analysisRepository) UpdateResolveStatus(ctx context.Context, id primitive.ObjectID, resolved bool) error {
+	_, err := r.dao.UpdateOne(ctx, bson.M{"_id": id}, bson.M{"$set": bson.M{"is_resolved": resolved}})
+	return err
 }

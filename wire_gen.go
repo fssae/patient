@@ -14,9 +14,7 @@ import (
 	"classroom-analysis/internal/service"
 	"classroom-analysis/internal/web"
 	"classroom-analysis/internal/ws"
-)
 
-import (
 	_ "classroom-analysis/docs"
 )
 
@@ -86,7 +84,10 @@ func InitWebServer() *App {
 	analysisHandler := web.NewAnalysisHandler(analysisService)
 	statsService := service.NewStatsService()
 	statsHandler := web.NewStatsHandler(statsService)
-	engine := ioc.InitGin(v, patientHandler, fileHandler, userHandler, healthManagerHandler, roomHandler, bedHandler, careLevelHandler, dietPlanHandler, customerHandler, recordHandler, serviceHandler, careRecordHandler, webSocketManager, analysisHandler, statsHandler)
+	alertHandler := web.NewAlertHandler(analysisService)
+	notificationHandler := web.NewNotificationHandler()
+	compatHandler := web.NewCompatHandler(customerService, statsService)
+	engine := ioc.InitGin(v, patientHandler, fileHandler, userHandler, healthManagerHandler, roomHandler, bedHandler, careLevelHandler, dietPlanHandler, customerHandler, recordHandler, serviceHandler, careRecordHandler, webSocketManager, analysisHandler, statsHandler, alertHandler, notificationHandler, compatHandler)
 	redisClient := ioc.InitRedis()
 	config := ioc.InitViper()
 	alertConsumer := mq.NewAlertConsumer()

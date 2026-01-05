@@ -27,6 +27,9 @@ func InitGin(
 	wsMgr *ws.WebSocketManager,
 	analysisHandler *web.AnalysisHandler,
 	statsHandler *web.StatsHandler,
+	alertHandler *web.AlertHandler,
+	notificationHandler *web.NotificationHandler,
+	compatHandler *web.CompatHandler,
 ) *gin.Engine {
 	engine := gin.Default()
 	// 1. 注册基础全局中间件（不包含 JWT）
@@ -38,6 +41,10 @@ func InitGin(
 	// 假设你的登录注册在 userHandler 里
 	userHandler.RegisterRoutes(engine)
 	patientHandler.RegisterRoutes(engine)
+
+	// 注册前端兼容路由（无需 JWT）
+	compatHandler.RegisterRoutes(engine)
+
 	authGroup := engine.Group("/")
 	authGroup.Use(GetJWTMiddleware()) // 只在这个组里应用 JWT
 	{
@@ -66,6 +73,11 @@ func InitGin(
 		analysisHandler.RegisterRoutes(authGroup)
 		// 注册统计相关路由
 		statsHandler.RegisterRoutes(engine) // 统计接口通常不需要 JWT，或者按需放置
+
+		// 注册告警管理路由
+		alertHandler.RegisterRoutes(authGroup)
+		// 注册通知推送路由
+		notificationHandler.RegisterRoutes(authGroup)
 	}
 	// Swagger文档路由
 	engine.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
