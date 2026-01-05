@@ -34,7 +34,7 @@ func (h *RecordHandler) RegisterRoutes(server gin.IRouter) {
 	group.POST("/return", h.Return)
 	group.GET("", h.GetList)
 	group.GET("/customer/:customer_id", h.GetByCustomerID)
-	group.POST("/outgoing/upload", h.updateRecords)
+	group.POST("/outgoing/update", h.OutgoingUpload)
 }
 
 // CheckIn 入住登记
@@ -420,14 +420,13 @@ type UpdateRecordRequest struct {
 	CustomerID         string `json:"customerId"`         // 客户ID
 	ElderID            string `json:"elderId"`            // 老人姓名
 	EmergencyContact   string `json:"emergencyContact"`   // 紧急联系电话
-	OutTime            string `json:"outTime"`            // 外出时间
 	ExpectedReturnTime string `json:"expectedReturnTime"` // 预计返回时间
 	Destination        string `json:"destination"`        // 目的地
 	Escort             string `json:"escort"`             // 陪同人员
 	Remark             string `json:"remark"`             // 备注
 }
 
-func (h *RecordHandler) updateRecords(c *gin.Context) {
+func (h *RecordHandler) OutgoingUpload(c *gin.Context) {
 	var req UpdateRecordRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -461,24 +460,11 @@ func (h *RecordHandler) updateRecords(c *gin.Context) {
 	record := &domain.Record{
 		ID:               recordID,
 		CustomerID:       customerID,
+		Type:             "外出",
 		EmergencyContact: req.EmergencyContact,
-		Note:             req.Destination,
+		Destination:      req.Destination,
 		Escort:           req.Escort,
 		Remark:           req.Remark,
-	}
-
-	// 将字符串时间转换为 time.Time 类型
-	if req.OutTime != "" {
-		outTime, err := time.Parse("2006-01-02T15:04:05.000Z", req.OutTime)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"code":    400,
-				"msg":     "外出时间格式错误: " + err.Error(),
-				"success": false,
-			})
-			return
-		}
-		record.StartTime = outTime
 	}
 
 	if req.ExpectedReturnTime != "" {
@@ -491,7 +477,7 @@ func (h *RecordHandler) updateRecords(c *gin.Context) {
 			})
 			return
 		}
-		record.EndTime = expectedReturnTime
+		record.ExpectedReturnTime = expectedReturnTime
 	}
 
 	// 调用服务层的更新方法

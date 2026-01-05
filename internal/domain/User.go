@@ -244,9 +244,9 @@ type CareLevel struct {
 type Record struct {
 	ID                 primitive.ObjectID `json:"id,omitempty" bson:"_id,omitempty"`
 	CustomerID         primitive.ObjectID `json:"customer_id" bson:"customer_id" binding:"required"`
-	Type               string             `json:"type" bson:"type" binding:"required"` // "入住"/"退住"/"外出"
-	StartTime          time.Time          `json:"start_time" bson:"start_time" binding:"required"`
-	EndTime            time.Time          `json:"end_time,omitempty" bson:"end_time,omitempty"` // 退住时间或外出返回时间
+	Type               string             `json:"type" bson:"type" binding:"required"`             // "入住"/"退住"/"外出"
+	StartTime          time.Time          `json:"start_time" bson:"start_time" binding:"optional"` // 入住时间或外出时间
+	EndTime            time.Time          `json:"end_time,omitempty" bson:"end_time,omitempty"`    // 退住时间或外出返回时间
 	Note               string             `json:"note" bson:"note"`
 	CreatedBy          string             `json:"created_by" bson:"created_by"` // 操作人
 	CreatedAt          time.Time          `json:"created_at" bson:"created_at"`
