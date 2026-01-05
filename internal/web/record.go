@@ -5,6 +5,7 @@ import (
 	"classroom-analysis/internal/service"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -33,6 +34,7 @@ func (h *RecordHandler) RegisterRoutes(server gin.IRouter) {
 	group.POST("/return", h.Return)
 	group.GET("", h.GetList)
 	group.GET("/customer/:customer_id", h.GetByCustomerID)
+	group.POST("/outgoing/upload", h.updateRecords)
 }
 
 // CheckIn 入住登记
@@ -410,5 +412,101 @@ func (h *RecordHandler) GetOutgoingList(c *gin.Context) {
 		"msg":     "获取成功",
 		"success": true,
 		"data":    list,
+	})
+}
+
+type UpdateRecordRequest struct {
+	ID                 string `json:"id"`
+	CustomerID         string `json:"customerId"`         // 客户ID
+	ElderID            string `json:"elderId"`            // 老人姓名
+	EmergencyContact   string `json:"emergencyContact"`   // 紧急联系电话
+	OutTime            string `json:"outTime"`            // 外出时间
+	ExpectedReturnTime string `json:"expectedReturnTime"` // 预计返回时间
+	Destination        string `json:"destination"`        // 目的地
+	Escort             string `json:"escort"`             // 陪同人员
+	Remark             string `json:"remark"`             // 备注
+}
+
+func (h *RecordHandler) updateRecords(c *gin.Context) {
+	var req UpdateRecordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    400,
+			"msg":     "请求参数错误: " + err.Error(),
+			"success": false,
+		})
+		return
+	}
+
+	//检擦customer_id是否有效
+	customerID, err := primitive.ObjectIDFromHex(req.CustomerID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code": 400,
+			"msg":  "无效的客户ID",
+		})
+		return
+	}
+	//检查_id是否有效
+	recordID, err := primitive.ObjectIDFromHex(req.ID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code": 400,
+			"msg":  "无效的记录ID",
+		})
+		return
+	}
+
+	// 将请求体中的数据转换为 domain.Record 结构体
+	record := &domain.Record{
+		ID:               recordID,
+		CustomerID:       customerID,
+		EmergencyContact: req.EmergencyContact,
+		Note:             req.Destination,
+		Escort:           req.Escort,
+		Remark:           req.Remark,
+	}
+
+	// 将字符串时间转换为 time.Time 类型
+	if req.OutTime != "" {
+		outTime, err := time.Parse("2006-01-02T15:04:05.000Z", req.OutTime)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"code":    400,
+				"msg":     "外出时间格式错误: " + err.Error(),
+				"success": false,
+			})
+			return
+		}
+		record.StartTime = outTime
+	}
+
+	if req.ExpectedReturnTime != "" {
+		expectedReturnTime, err := time.Parse("2006-01-02T15:04:05.000Z", req.ExpectedReturnTime)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"code":    400,
+				"msg":     "预计返回时间格式错误: " + err.Error(),
+				"success": false,
+			})
+			return
+		}
+		record.EndTime = expectedReturnTime
+	}
+
+	// 调用服务层的更新方法
+	if err := h.svc.UpdateRecord(c.Request.Context(), record, customerID, req.ElderID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"msg":     "更新记录失败: " + err.Error(),
+			"success": false,
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":    200,
+		"msg":     "更新成功",
+		"success": true,
 	})
 }

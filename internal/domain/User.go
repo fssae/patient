@@ -241,14 +241,19 @@ type CareLevel struct {
 
 // Record 登记记录（入住/退住/外出）
 type Record struct {
-	ID         primitive.ObjectID `json:"id,omitempty" bson:"_id,omitempty"`
-	CustomerID primitive.ObjectID `json:"customer_id" bson:"customer_id" binding:"required"`
-	Type       string             `json:"type" bson:"type" binding:"required"` // "入住"/"退住"/"外出"
-	StartTime  time.Time          `json:"start_time" bson:"start_time" binding:"required"`
-	EndTime    time.Time          `json:"end_time,omitempty" bson:"end_time,omitempty"` // 退住时间或外出返回时间
-	Note       string             `json:"note" bson:"note"`
-	CreatedBy  string             `json:"created_by" bson:"created_by"` // 操作人
-	CreatedAt  time.Time          `json:"created_at" bson:"created_at"`
+	ID                 primitive.ObjectID `json:"id,omitempty" bson:"_id,omitempty"`
+	CustomerID         primitive.ObjectID `json:"customer_id" bson:"customer_id" binding:"required"`
+	Type               string             `json:"type" bson:"type" binding:"required"` // "入住"/"退住"/"外出"
+	StartTime          time.Time          `json:"start_time" bson:"start_time" binding:"required"`
+	EndTime            time.Time          `json:"end_time,omitempty" bson:"end_time,omitempty"` // 退住时间或外出返回时间
+	Note               string             `json:"note" bson:"note"`
+	CreatedBy          string             `json:"created_by" bson:"created_by"` // 操作人
+	CreatedAt          time.Time          `json:"created_at" bson:"created_at"`
+	EmergencyContact   string             `json:"emergency_contact" bson:"emergency_contact"`                           // 紧急联系人姓名
+	Destination        string             `json:"destination,omitempty" bson:"destination,omitempty"`                   // 外出目的地
+	Escort             string             `json:"escort,omitempty" bson:"escort,omitempty"`                             // 陪护人姓名
+	ExpectedReturnTime time.Time          `json:"expected_return_time,omitempty" bson:"expected_return_time,omitempty"` // 预计归来时间
+	Remark             string             `json:"remark,omitempty" bson:"remark,omitempty"`                             // 备注说明
 }
 
 // Service 服务项目
