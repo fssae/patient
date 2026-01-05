@@ -375,6 +375,7 @@ func (s *RecordService) GetCheckInList(ctx context.Context, name, bedId, nursing
 			"status":        c.Status,
 			"bed_number":    bedNum,
 			"bed_id":        c.BedID.Hex(),
+			"nursing_id":    c.CareLevelID,
 			"nursing_level": levelName,
 		})
 	}
