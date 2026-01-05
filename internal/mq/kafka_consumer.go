@@ -56,11 +56,12 @@ func NewAlertConsumer() *AlertConsumer {
 	if len(brokers) == 0 {
 		brokers = []string{"82.156.64.69:9092"} // 备用 IP
 	}
-	// 默认配置可以根据需要调整
+	// 使用唯一的消费者组ID，避免与其他消费者冲突
+	// 每次启动使用固定ID，确保消费组状态一致
 	return &AlertConsumer{
 		brokers: brokers,
 		topic:   "elderly_alerts",
-		groupID: "elderly-alert-group",
+		groupID: "elderly-alert-backend-v2", // 使用新的消费者组ID
 	}
 }
 
@@ -72,25 +73,49 @@ func (c *AlertConsumer) SetMessageHandler(handler func(msg *AlertMessage)) {
 // Start 启动消费者循环
 func (c *AlertConsumer) Start(ctx context.Context) {
 	config := sarama.NewConfig()
-	config.Version = sarama.V3_0_0_0 // 根据 Kafka 版本调整
-	config.Consumer.Offsets.Initial = sarama.OffsetNewest
+	config.Version = sarama.V2_1_0_0                      // 与 ioc/kafka.go 保持一致
+	config.Consumer.Offsets.Initial = sarama.OffsetNewest // 从最新消息开始，避免重复消费
+
+	// 消费者组配置 - 确保正确的分区分配
+	config.Consumer.Group.Rebalance.GroupStrategies = []sarama.BalanceStrategy{sarama.NewBalanceStrategyRange()}
+	config.Consumer.Group.Session.Timeout = 30 * time.Second
+	config.Consumer.Group.Heartbeat.Interval = 3 * time.Second
+
+	// 静态成员ID - 减少重平衡
+	// 使用固定的实例ID，重启后重新加入不会触发不必要的重平衡
+	config.Consumer.Group.InstanceId = "elderly-alert-backend-instance-1"
 
 	// 如果需要认证，匹配现有项目风格
 	username := viper.GetString("kafka.username")
 	password := viper.GetString("kafka.password")
+
+	log.Printf("========== Kafka 告警消费者配置 ==========")
+	log.Printf("Brokers: %v", c.brokers)
+	log.Printf("Topic: %s", c.topic)
+	log.Printf("GroupID: %s", c.groupID)
+	log.Printf("Username: %s", username)
+	log.Printf("Password 长度: %d", len(password))
+
 	if username != "" && password != "" {
 		config.Net.SASL.Enable = true
 		config.Net.SASL.User = username
 		config.Net.SASL.Password = password
 		config.Net.SASL.Mechanism = sarama.SASLTypePlaintext
 		config.Net.SASL.Handshake = true
+		config.Net.TLS.Enable = false // 确保关闭 TLS，使用 SASL_PLAINTEXT
+		log.Printf("SASL 认证已启用: User=%s, Mechanism=%s", username, sarama.SASLTypePlaintext)
+	} else {
+		log.Printf("警告: SASL 认证未启用 (username 或 password 为空)")
 	}
 
+	log.Printf("尝试连接到 Kafka brokers: %v", c.brokers)
 	client, err := sarama.NewConsumerGroup(c.brokers, c.groupID, config)
 	if err != nil {
 		log.Printf("创建消费者组客户端错误: %v", err)
+		log.Printf("请检查: 1) Broker 地址是否正确 2) 端口是否开放 3) SASL 认证信息是否正确")
 		return
 	}
+	log.Printf("成功创建消费者组客户端")
 
 	handler := &consumerGroupHandler{
 		callback: c.handler,
@@ -117,16 +142,33 @@ type consumerGroupHandler struct {
 	callback func(msg *AlertMessage)
 }
 
-func (h *consumerGroupHandler) Setup(_ sarama.ConsumerGroupSession) error   { return nil }
-func (h *consumerGroupHandler) Cleanup(_ sarama.ConsumerGroupSession) error { return nil }
+func (h *consumerGroupHandler) Setup(session sarama.ConsumerGroupSession) error {
+	log.Printf("消费者组 Setup - MemberID: %s, GenerationID: %d, Claims: %v",
+		session.MemberID(), session.GenerationID(), session.Claims())
+	return nil
+}
+
+func (h *consumerGroupHandler) Cleanup(session sarama.ConsumerGroupSession) error {
+	log.Printf("消费者组 Cleanup - MemberID: %s", session.MemberID())
+	return nil
+}
+
 func (h *consumerGroupHandler) ConsumeClaim(sess sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
+	log.Printf("开始消费分区 - Topic: %s, Partition: %d, InitialOffset: %d",
+		claim.Topic(), claim.Partition(), claim.InitialOffset())
+
 	for msg := range claim.Messages() {
+		log.Printf("收到消息 - Topic: %s, Partition: %d, Offset: %d, 内容长度: %d bytes",
+			msg.Topic, msg.Partition, msg.Offset, len(msg.Value))
+
 		var alert AlertMessage
 		if err := json.Unmarshal(msg.Value, &alert); err != nil {
 			log.Printf("解码告警消息错误: %v. 原始消息: %s", err, string(msg.Value))
 			sess.MarkMessage(msg, "")
 			continue
 		}
+
+		log.Printf("成功解析告警 - EventType: %s, AlertType: %s", alert.EventType, alert.AlertType)
 
 		if h.callback != nil {
 			h.callback(&alert)

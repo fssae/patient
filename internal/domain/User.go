@@ -286,6 +286,8 @@ type CustomerService struct {
 // CustomerServiceResponse 客户购买的服务（包含关联信息）
 type CustomerServiceResponse struct {
 	ID           primitive.ObjectID `json:"id,omitempty"`
+	RoomNumber   string             `json:"room_number"`
+	CareLevelstr string             `json:"care_level"`
 	CustomerID   primitive.ObjectID `json:"customer_id"`
 	CustomerName string             `json:"customer_name"` // 客户姓名
 	ServiceID    primitive.ObjectID `json:"service_id"`

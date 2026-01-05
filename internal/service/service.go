@@ -15,13 +15,26 @@ type ServerService struct {
 	serviceRepo         repository.ServiceRepository
 	customerServiceRepo repository.CustomerServiceRepository
 	customerRepo        repository.CustomerRepository
+	bedRepo             repository.BedRepository
+	roomRepo            repository.RoomRepository
+	careLevelRepo       repository.CareLevelRepository
 }
 
-func NewServiceService(serviceRepo repository.ServiceRepository, customerServiceRepo repository.CustomerServiceRepository, customerRepo repository.CustomerRepository) *ServerService {
+func NewServiceService(
+	serviceRepo repository.ServiceRepository,
+	customerServiceRepo repository.CustomerServiceRepository,
+	customerRepo repository.CustomerRepository,
+	bedRepo repository.BedRepository,
+	roomRepo repository.RoomRepository,
+	careLevelRepo repository.CareLevelRepository,
+) *ServerService {
 	return &ServerService{
 		serviceRepo:         serviceRepo,
 		customerServiceRepo: customerServiceRepo,
 		customerRepo:        customerRepo,
+		bedRepo:             bedRepo,
+		roomRepo:            roomRepo,
+		careLevelRepo:       careLevelRepo,
 	}
 }
 
@@ -147,12 +160,20 @@ func (s *ServerService) GetCustomerServiceList(ctx context.Context, customerID, 
 		serviceIDs[cs.ServiceID] = true
 	}
 
-	// 批量查询客户信息
-	customerMap := make(map[primitive.ObjectID]string)
+	// 批量查询客户信息（包含完整信息以获取 BedID 和 CareLevelID）
+	customerMap := make(map[primitive.ObjectID]*domain.Customer)
+	bedIDs := make(map[primitive.ObjectID]bool)
+	careLevelIDs := make(map[primitive.ObjectID]bool)
 	for id := range customerIDs {
 		customer, err := s.customerRepo.FindById(ctx, id)
 		if err == nil && customer != nil {
-			customerMap[id] = customer.Name
+			customerMap[id] = customer
+			if !customer.BedID.IsZero() {
+				bedIDs[customer.BedID] = true
+			}
+			if !customer.CareLevelID.IsZero() {
+				careLevelIDs[customer.CareLevelID] = true
+			}
 		}
 	}
 
@@ -165,21 +186,67 @@ func (s *ServerService) GetCustomerServiceList(ctx context.Context, customerID, 
 		}
 	}
 
+	// 批量查询床位信息
+	bedMap := make(map[primitive.ObjectID]*domain.Bed)
+	roomIDs := make(map[primitive.ObjectID]bool)
+	for id := range bedIDs {
+		bed, err := s.bedRepo.FindById(ctx, id)
+		if err == nil && bed != nil {
+			bedMap[id] = bed
+			if !bed.RoomID.IsZero() {
+				roomIDs[bed.RoomID] = true
+			}
+		}
+	}
+
+	// 批量查询房间信息
+	roomMap := make(map[primitive.ObjectID]*domain.Room)
+	for id := range roomIDs {
+		room, err := s.roomRepo.FindById(ctx, id)
+		if err == nil && room != nil {
+			roomMap[id] = room
+		}
+	}
+
+	// 批量查询护理级别信息
+	careLevelMap := make(map[primitive.ObjectID]*domain.CareLevel)
+	for id := range careLevelIDs {
+		careLevel, err := s.careLevelRepo.FindById(ctx, id)
+		if err == nil && careLevel != nil {
+			careLevelMap[id] = careLevel
+		}
+	}
+
 	// 组装响应数据
 	result := make([]*domain.CustomerServiceResponse, 0, len(list))
 	for _, cs := range list {
 		resp := &domain.CustomerServiceResponse{
-			ID:           cs.ID,
-			CustomerID:   cs.CustomerID,
-			CustomerName: customerMap[cs.CustomerID],
-			ServiceID:    cs.ServiceID,
-			ServiceName:  cs.ServiceName,
-			StartDate:    cs.StartDate,
-			EndDate:      cs.EndDate,
-			Status:       cs.Status,
-			CreatedAt:    cs.CreatedAt,
-			UpdatedAt:    cs.UpdatedAt,
+			ID:          cs.ID,
+			CustomerID:  cs.CustomerID,
+			ServiceID:   cs.ServiceID,
+			ServiceName: cs.ServiceName,
+			StartDate:   cs.StartDate,
+			EndDate:     cs.EndDate,
+			Status:      cs.Status,
+			CreatedAt:   cs.CreatedAt,
+			UpdatedAt:   cs.UpdatedAt,
 		}
+
+		// 填充客户相关信息（姓名、房间号、护理级别）
+		if customer, ok := customerMap[cs.CustomerID]; ok {
+			resp.CustomerName = customer.Name
+			// 填充房间号
+			if bed, bedOk := bedMap[customer.BedID]; bedOk {
+				if room, roomOk := roomMap[bed.RoomID]; roomOk {
+					resp.RoomNumber = room.Number
+				}
+			}
+			// 填充护理级别
+			if careLevel, clOk := careLevelMap[customer.CareLevelID]; clOk {
+				resp.CareLevelstr = careLevel.Name
+			}
+		}
+
 		// 填充服务详情
 		if svc, ok := serviceMap[cs.ServiceID]; ok {
 			resp.ServiceName = svc.Name

@@ -14,7 +14,9 @@ import (
 	"classroom-analysis/internal/service"
 	"classroom-analysis/internal/web"
 	"classroom-analysis/internal/ws"
+)
 
+import (
 	_ "classroom-analysis/docs"
 )
 
@@ -71,7 +73,7 @@ func InitWebServer() *App {
 	serviceRepository := repository.NewServiceRepository(serviceDAO)
 	customerServiceDAO := dao.NewCustomerServiceDAO(database)
 	customerServiceRepository := repository.NewCustomerServiceRepository(customerServiceDAO)
-	serverService := service.NewServiceService(serviceRepository, customerServiceRepository, customerRepository)
+	serverService := service.NewServiceService(serviceRepository, customerServiceRepository, customerRepository, bedRepository, roomRepository, careLevelRepository)
 	serviceHandler := web.NewServiceHandler(serverService)
 	careRecordDAO := dao.NewCareRecordDAO(database)
 	careRecordRepository := repository.NewCareRecordRepository(careRecordDAO)

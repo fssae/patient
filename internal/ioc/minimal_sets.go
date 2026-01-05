@@ -95,6 +95,9 @@ var MinimalSet = wire.NewSet(
 	web.NewCareRecordHandler,
 	web.NewAnalysisHandler,
 	web.NewStatsHandler,
+	web.NewAlertHandler,
+	web.NewNotificationHandler,
+	web.NewCompatHandler,
 
 	// Gin引擎
 	InitGin,
