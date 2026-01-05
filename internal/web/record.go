@@ -24,10 +24,7 @@ func NewRecordHandler(svc *service.RecordService) *RecordHandler {
 func (h *RecordHandler) RegisterRoutes(server gin.IRouter) {
 	group := server.Group("/api/records")
 	group.POST("/check-in", h.CheckIn)
-	//TODO根据房间id查
-
 	group.GET("/check-in-info", h.GetCheckInInfo)
-	//TODO
 	group.POST("/check-out", h.CheckOut)
 	group.GET("/check-out-list", h.GetCheckOutList)
 	group.POST("/outgoing", h.Outgoing)

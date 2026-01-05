@@ -103,7 +103,6 @@ func (s *BedService) GetList(ctx context.Context, roomNumber, bedNumber, status 
 	RoomIDs := make([]primitive.ObjectID, 0)
 	for _, v := range list {
 		if !v.RoomID.IsZero() {
-			//TODO
 			RoomIDs = append(RoomIDs, v.RoomID)
 		}
 		roomMap := s.getRoomMap(ctx, RoomIDs)
