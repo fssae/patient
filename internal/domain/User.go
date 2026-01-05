@@ -260,8 +260,7 @@ type Record struct {
 // Record 更新记录请求体
 type UpdateRecordRequest struct {
 	ID                 string `json:"id"`
-	CustomerID         string `json:"customerId"`         // 客户ID
-	ElderID            string `json:"elderId"`            // 老人姓名
+	CustomerID         string `json:"customer_id"`        // 客户ID
 	EmergencyContact   string `json:"emergencyContact"`   // 紧急联系电话
 	ExpectedReturnTime string `json:"expectedReturnTime"` // 预计返回时间
 	Destination        string `json:"destination"`        // 目的地

@@ -608,17 +608,19 @@ func (s *RecordService) GetOutgoingList(ctx context.Context, name, startDate, en
 		}
 
 		item := map[string]interface{}{
-			"id":                   r.ID.Hex(),
-			"customer_name":        customerName,
-			"contact_phone":        phone,
-			"outgoing_time":        r.StartTime,
-			"expected_return_time": "", // 暂无数据
+			"id":            r.ID.Hex(),
+			"customer_name": customerName,
+			"contact_phone": phone,
+			"outgoing_time": r.StartTime,
+			//TODO登记时候显示实际返回时间
+			"expected_return_time": r.ExpectedReturnTime, // 暂无数据
 			"actual_return_time":   r.EndTime,
 			"status":               currentStatus,
-			"destination":          r.Note, // 备注作为目的地
+			"destination":          r.Destination, // 备注作为目的地
 			// "customer_id" 用于前端操作 (登记返回等)?
 			"customer_id": r.CustomerID.Hex(),
 			"escort":      r.Escort,
+			"remark":      r.Remark,
 		}
 		results = append(results, item)
 	}
@@ -662,6 +664,8 @@ func (s *RecordService) UpdateOutgoingRecord(ctx context.Context, req *domain.Up
 			return err
 		}
 		record.ExpectedReturnTime = expectedReturnTime
+
+		fmt.Println("Parsed ExpectedReturnTime:", expectedReturnTime)
 	}
 
 	// 更新records
