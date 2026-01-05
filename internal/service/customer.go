@@ -357,7 +357,7 @@ func (s *CustomerService) Update(ctx context.Context, id primitive.ObjectID, upd
 		updates["care_level_id"] = newCareLevelID
 	}
 
-	return s.customerRepo.Update(ctx, id, updates)
+	return s.customerRepo.Update(ctx, customer.ID, updates)
 }
 
 // SetHealthManager 设置健康管家

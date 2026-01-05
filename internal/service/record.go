@@ -167,7 +167,7 @@ func (s *RecordService) CheckOut(ctx context.Context, customerID primitive.Objec
 }
 
 // Outgoing 外出登记
-func (s *RecordService) Outgoing(ctx context.Context, customerID primitive.ObjectID, note, createdBy string) error {
+func (s *RecordService) Outgoing(ctx context.Context, customerID primitive.ObjectID, req *domain.OutgoingRequest) error {
 	// 验证客户是否存在
 	customer, err := s.customerRepo.FindById(ctx, customerID)
 	if err != nil {
@@ -193,12 +193,33 @@ func (s *RecordService) Outgoing(ctx context.Context, customerID primitive.Objec
 
 	// 创建外出记录
 	record := &domain.Record{
-		CustomerID: customerID,
-		Type:       "外出",
-		StartTime:  time.Now(),
-		Note:       note,
-		CreatedBy:  createdBy,
-		CreatedAt:  time.Now(),
+		CustomerID:       customerID,
+		Type:             "外出",
+		StartTime:        time.Now(),
+		Note:             req.Note,
+		CreatedBy:        req.CreatedBy,
+		Destination:      req.Destination,
+		EmergencyContact: req.EmergencyContact,
+		Escort:           req.Escort,
+		CreatedAt:        time.Now(),
+	}
+
+	//预计返回时间
+	if req.ExpectedReturnTime != "" {
+		expectedReturnTime, err := time.Parse("2006-01-02T15:04:05.000Z", req.ExpectedReturnTime)
+		if err != nil {
+			return err
+		}
+		record.ExpectedReturnTime = expectedReturnTime
+	}
+
+	//外出时间
+	if req.OutTime != "" {
+		outTime, err := time.Parse("2006-01-02T15:04:05.000Z", req.OutTime)
+		if err != nil {
+			return err
+		}
+		record.StartTime = outTime
 	}
 
 	return s.recordRepo.Create(ctx, record)
@@ -605,32 +626,49 @@ func (s *RecordService) GetOutgoingList(ctx context.Context, name, startDate, en
 	return results, nil
 }
 
-// UpdateRecord 更新客户的记录
-func (s *RecordService) UpdateRecord(ctx context.Context, record *domain.Record, customerID primitive.ObjectID, elderId string) error {
-	// 检查记录是否存在
-	_, err := s.recordRepo.FindByCustomerID(ctx, record.CustomerID)
+// UpdateOutgoingRecord 更新外出记录（包含所有业务逻辑）
+func (s *RecordService) UpdateOutgoingRecord(ctx context.Context, req *domain.UpdateRecordRequest) error {
+	// 检查customer_id是否有效
+	customerID, err := primitive.ObjectIDFromHex(req.CustomerID)
 	if err != nil {
 		return err
 	}
-	//更新records
+
+	// 检查_id是否有效
+	recordID, err := primitive.ObjectIDFromHex(req.ID)
+	if err != nil {
+		return err
+	}
+
+	// 检查记录是否存在
+	_, err = s.recordRepo.FindByCustomerID(ctx, customerID)
+	if err != nil {
+		return err
+	}
+
+	// 将请求体中的数据转换为 domain.Record 结构体
+	record := &domain.Record{
+		ID:               recordID,
+		CustomerID:       customerID,
+		Type:             "外出",
+		EmergencyContact: req.EmergencyContact,
+		Destination:      req.Destination,
+		Escort:           req.Escort,
+		Remark:           req.Remark,
+	}
+
+	if req.ExpectedReturnTime != "" {
+		expectedReturnTime, err := time.Parse("2006-01-02T15:04:05.000Z", req.ExpectedReturnTime)
+		if err != nil {
+			return err
+		}
+		record.ExpectedReturnTime = expectedReturnTime
+	}
+
+	// 更新records
 	if err := s.recordRepo.Update(ctx, record); err != nil {
 		return err
 	}
 
-	// 检查customer是否存在该用户
-	customer, err := s.customerRepo.FindByUserID(ctx, customerID)
-	if err != nil {
-		return err
-	}
-	if customer == nil {
-		return errors.New("客户未找到")
-	}
-	// 更新客户名称
-	updates := map[string]interface{}{
-		"name": elderId,
-	}
-	if err := s.customerRepo.Update(ctx, customer.ID, updates); err != nil {
-		return err
-	}
 	return nil
 }

@@ -5,7 +5,6 @@ import (
 	"classroom-analysis/internal/service"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -155,7 +154,7 @@ func (h *RecordHandler) Outgoing(c *gin.Context) {
 		return
 	}
 
-	err = h.svc.Outgoing(c.Request.Context(), customerID, req.Note, req.CreatedBy)
+	err = h.svc.Outgoing(c.Request.Context(), customerID, &req)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code": 400,
@@ -415,19 +414,8 @@ func (h *RecordHandler) GetOutgoingList(c *gin.Context) {
 	})
 }
 
-type UpdateRecordRequest struct {
-	ID                 string `json:"id"`
-	CustomerID         string `json:"customerId"`         // 客户ID
-	ElderID            string `json:"elderId"`            // 老人姓名
-	EmergencyContact   string `json:"emergencyContact"`   // 紧急联系电话
-	ExpectedReturnTime string `json:"expectedReturnTime"` // 预计返回时间
-	Destination        string `json:"destination"`        // 目的地
-	Escort             string `json:"escort"`             // 陪同人员
-	Remark             string `json:"remark"`             // 备注
-}
-
 func (h *RecordHandler) OutgoingUpload(c *gin.Context) {
-	var req UpdateRecordRequest
+	var req domain.UpdateRecordRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
@@ -437,51 +425,8 @@ func (h *RecordHandler) OutgoingUpload(c *gin.Context) {
 		return
 	}
 
-	//检擦customer_id是否有效
-	customerID, err := primitive.ObjectIDFromHex(req.CustomerID)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code": 400,
-			"msg":  "无效的客户ID",
-		})
-		return
-	}
-	//检查_id是否有效
-	recordID, err := primitive.ObjectIDFromHex(req.ID)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code": 400,
-			"msg":  "无效的记录ID",
-		})
-		return
-	}
-
-	// 将请求体中的数据转换为 domain.Record 结构体
-	record := &domain.Record{
-		ID:               recordID,
-		CustomerID:       customerID,
-		Type:             "外出",
-		EmergencyContact: req.EmergencyContact,
-		Destination:      req.Destination,
-		Escort:           req.Escort,
-		Remark:           req.Remark,
-	}
-
-	if req.ExpectedReturnTime != "" {
-		expectedReturnTime, err := time.Parse("2006-01-02T15:04:05.000Z", req.ExpectedReturnTime)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"code":    400,
-				"msg":     "预计返回时间格式错误: " + err.Error(),
-				"success": false,
-			})
-			return
-		}
-		record.ExpectedReturnTime = expectedReturnTime
-	}
-
-	// 调用服务层的更新方法
-	if err := h.svc.UpdateRecord(c.Request.Context(), record, customerID, req.ElderID); err != nil {
+	// 调用服务层处理所有业务逻辑
+	if err := h.svc.UpdateOutgoingRecord(c.Request.Context(), &req); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
 			"msg":     "更新记录失败: " + err.Error(),

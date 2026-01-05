@@ -257,6 +257,18 @@ type Record struct {
 	Remark             string             `json:"remark,omitempty" bson:"remark,omitempty"`                             // 备注说明
 }
 
+// Record 更新记录请求体
+type UpdateRecordRequest struct {
+	ID                 string `json:"id"`
+	CustomerID         string `json:"customerId"`         // 客户ID
+	ElderID            string `json:"elderId"`            // 老人姓名
+	EmergencyContact   string `json:"emergencyContact"`   // 紧急联系电话
+	ExpectedReturnTime string `json:"expectedReturnTime"` // 预计返回时间
+	Destination        string `json:"destination"`        // 目的地
+	Escort             string `json:"escort"`             // 陪同人员
+	Remark             string `json:"remark"`             // 备注
+}
+
 // Service 服务项目
 type Service struct {
 	ID          primitive.ObjectID `json:"id,omitempty" bson:"_id,omitempty"`
@@ -357,9 +369,16 @@ type CheckOutRequest struct {
 }
 
 type OutgoingRequest struct {
-	CustomerID string `json:"customer_id" binding:"required"`
-	Note       string `json:"note"`
-	CreatedBy  string `json:"created_by" binding:"required"`
+	CustomerID         string `json:"elder_id"`
+	Note               string `json:"note"`
+	CustomerName       string `json:"customer_name"`
+	CreatedBy          string `json:"created_by"`
+	Destination        string `json:"destination" binding:"required"`
+	EmergencyContact   string `json:"emergencycontact" binding:"required"`
+	Escort             string `json:"escort" binding:"required"`
+	ExpectedReturnTime string `json:"expectedreturntime" binding:"required"`
+	OutTime            string `json:"outTime" binding:"required"`
+	Remark             string `json:"remark"`
 }
 
 type ReturnRequest struct {
