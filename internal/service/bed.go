@@ -100,11 +100,18 @@ func (s *BedService) GetList(ctx context.Context, roomNumber, bedNumber, status 
 	}
 	customerMap := s.getCustomerMap(ctx, customerIds)
 	listRes := make([]*domain.BedResponse, 0, len(list))
+	RoomIDs := make([]primitive.ObjectID, 0)
 	for _, v := range list {
+		if !v.RoomID.IsZero() {
+			//TODO
+			RoomIDs = append(RoomIDs, v.RoomID)
+		}
+		roomMap := s.getRoomMap(ctx, RoomIDs)
 		res := &domain.BedResponse{
 			ID:           v.ID,
 			Number:       v.Number,
 			RoomID:       v.RoomID,
+			RoomNumber:   roomMap[v.RoomID],
 			Status:       v.Status,
 			CreatedAt:    v.CreatedAt,
 			UpdatedAt:    v.UpdatedAt,
@@ -114,6 +121,23 @@ func (s *BedService) GetList(ctx context.Context, roomNumber, bedNumber, status 
 		listRes = append(listRes, res)
 	}
 	return listRes, total, nil
+}
+func (s *BedService) getRoomMap(ctx context.Context, ids []primitive.ObjectID) map[primitive.ObjectID]string {
+	result := make(map[primitive.ObjectID]string)
+	if len(ids) == 0 {
+		return result
+	}
+
+	filter := bson.M{"_id": bson.M{"$in": ids}}
+	rooms, _, err := s.roomRepo.FindList(ctx, filter, 0, int64(len(ids)))
+	if err != nil {
+		return result
+	}
+
+	for _, room := range rooms {
+		result[room.ID] = room.Number
+	}
+	return result
 }
 
 // AssignToCustomer 分配床位给客户

@@ -311,7 +311,7 @@ func (h *RecordHandler) GetByCustomerID(c *gin.Context) {
 // @Router       /records/check-in-info [get]
 func (h *RecordHandler) GetCheckInInfo(c *gin.Context) {
 	name := c.Query("name")
-	roomNumber := c.Query("room_number")
+	bedId := c.Query("bed_id")
 	nursingLevel := c.Query("nursing_level")
 	startDate := c.Query("check_in_start")
 	endDate := c.Query("check_in_end")
@@ -321,7 +321,7 @@ func (h *RecordHandler) GetCheckInInfo(c *gin.Context) {
 	skip, _ := strconv.ParseInt(skipStr, 10, 64)
 	limit, _ := strconv.ParseInt(limitStr, 10, 64)
 
-	list, err := h.svc.GetCheckInList(c.Request.Context(), name, roomNumber, nursingLevel, startDate, endDate, skip, limit)
+	list, err := h.svc.GetCheckInList(c.Request.Context(), name, bedId, nursingLevel, startDate, endDate, skip, limit)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code": 500,

@@ -265,7 +265,7 @@ func (s *RecordService) GetByCustomerID(ctx context.Context, customerID primitiv
 }
 
 // GetCheckInList 获取入住信息列表
-func (s *RecordService) GetCheckInList(ctx context.Context, name, roomNumber, nursingLevel string, startDate, endDate string, skip, limit int64) ([]map[string]interface{}, error) {
+func (s *RecordService) GetCheckInList(ctx context.Context, name, bedId, nursingLevel string, startDate, endDate string, skip, limit int64) ([]map[string]interface{}, error) {
 	filter := bson.M{}
 
 	// 名字模糊查询
@@ -273,22 +273,22 @@ func (s *RecordService) GetCheckInList(ctx context.Context, name, roomNumber, nu
 		filter["name"] = bson.M{"$regex": name, "$options": "i"}
 	}
 
-	// 房间号查询逻辑：Customer -> Bed -> Room
-	// 如果提供了房间号，需要先找到该房间下的所有床位ID，然后 Filter customer.bed_id IN [...]
-	if roomNumber != "" {
-
-		bedFilter := bson.M{"number": bson.M{"$regex": "^" + roomNumber}} // 假设床位号以房间号开头
-		beds, _, err := s.bedRepo.FindList(ctx, bedFilter, 0, 0)
+	if bedId != "" {
+		// 1. 将字符串 ID 转为 ObjectID
+		bID, err := primitive.ObjectIDFromHex(bedId)
+		if err != nil {
+			return nil, errors.New(err.Error())
+		}
+		// 2. 从 bed 集合中查询该床位文档
+		bed, err := s.bedRepo.FindById(ctx, bID)
 		if err != nil {
 			return nil, err
 		}
-		var bedIDs []primitive.ObjectID
-		for _, b := range beds {
-			bedIDs = append(bedIDs, b.ID)
-		}
-		if len(bedIDs) > 0 {
-			filter["bed_id"] = bson.M{"$in": bedIDs}
+		// 3. 拿到床位关联的客户 ID
+		if bed != nil && !bed.CustomerID.IsZero() {
+			filter["_id"] = bed.CustomerID
 		} else {
+			// 如果床位是空的（没有关联客户），直接返回空列表
 			return []map[string]interface{}{}, nil
 		}
 	}
@@ -317,49 +317,67 @@ func (s *RecordService) GetCheckInList(ctx context.Context, name, roomNumber, nu
 		filter["check_in_date"] = dateFilter
 	}
 
-	// 查询客户
-	customers, _, err := s.customerRepo.FindList(ctx, filter, skip, limit) // 暂未分页，全量返回
+	// 1. 查询客户列表
+	customers, _, err := s.customerRepo.FindList(ctx, filter, skip, limit)
 	if err != nil {
 		return nil, err
 	}
 
-	// 组装结果
+	// 2. 提取所有关联 ID（去重）
+	bedIDs := make([]primitive.ObjectID, 0)
+	levelIDs := make([]primitive.ObjectID, 0)
+	for _, c := range customers {
+		if !c.BedID.IsZero() {
+			bedIDs = append(bedIDs, c.BedID)
+		}
+		if !c.CareLevelID.IsZero() {
+			levelIDs = append(levelIDs, c.CareLevelID)
+		}
+	}
+
+	// 3. 批量查询 Bed 并转存为 Map
+	bedMap := make(map[primitive.ObjectID]string)
+	if len(bedIDs) > 0 {
+		beds, _, _ := s.bedRepo.FindList(ctx, bson.M{"_id": bson.M{"$in": bedIDs}}, 0, 0)
+		for _, b := range beds {
+			bedMap[b.ID] = b.Number
+		}
+	}
+
+	// 4. 批量查询 CareLevel 并转存为 Map
+	levelMap := make(map[primitive.ObjectID]string)
+	if len(levelIDs) > 0 {
+		levels, _, _ := s.careLevelRepo.FindList(ctx, bson.M{"_id": bson.M{"$in": levelIDs}}, 0, 0)
+		for _, l := range levels {
+			levelMap[l.ID] = l.Name
+		}
+	}
+
+	// 5. 组装结果
 	var results []map[string]interface{}
 	for _, c := range customers {
-		item := map[string]interface{}{
+		bedNum := "未知"
+		if n, ok := bedMap[c.BedID]; ok {
+			bedNum = n
+		}
+
+		levelName := "未知"
+		if n, ok := levelMap[c.CareLevelID]; ok {
+			levelName = n
+		}
+
+		results = append(results, map[string]interface{}{
 			"id":            c.ID.Hex(),
 			"name":          c.Name,
 			"gender":        c.Gender,
 			"age":           c.Age,
 			"check_in_time": c.CheckInDate,
 			"status":        c.Status,
-		}
-
-		// 填充床位号
-		if !c.BedID.IsZero() {
-			bed, _ := s.bedRepo.FindById(ctx, c.BedID)
-			if bed != nil {
-				item["bed_number"] = bed.Number
-			} else {
-				item["bed_number"] = "未知"
-			}
-		}
-
-		// 填充护理级别
-		// 注意: Customer 仅存储 CareLevelID，若需显示名称需关联查询
-		//这里进行关联查询
-		if c.CareLevelID.IsZero() {
-			item["nursing_level"] = "未知"
-		} else {
-			careLevel, _ := s.careLevelRepo.FindById(ctx, c.CareLevelID)
-			if careLevel != nil {
-				item["nursing_level"] = careLevel.Name
-			} else {
-				item["nursing_level"] = "未知"
-			}
-		}
-
-		results = append(results, item)
+			"bed_number":    bedNum,
+			"bed_id":        c.BedID.Hex(),
+			"nursing_id":    c.CareLevelID,
+			"nursing_level": levelName,
+		})
 	}
 
 	return results, nil
