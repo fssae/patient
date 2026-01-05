@@ -316,6 +316,10 @@ func (s *CustomerService) Update(ctx context.Context, id primitive.ObjectID, upd
 					return errors.New("床位不存在")
 				}
 				if bed.Status == "占用" {
+					//继续占用原来的床位
+					if err := s.bedRepo.AssignToCustomer(ctx, customer.BedID, id); err != nil {
+						return err
+					}
 					return errors.New("该床位已被占用")
 				}
 
@@ -323,10 +327,34 @@ func (s *CustomerService) Update(ctx context.Context, id primitive.ObjectID, upd
 				if err := s.bedRepo.AssignToCustomer(ctx, newBedID, id); err != nil {
 					return err
 				}
+
 			}
+
 		}
 
 		updates["bed_id"] = newBedID
+	}
+
+	// 业务逻辑处理：检查是否修改了护理级别
+
+	if val, hasCareLevelID := updates["care_level_id"]; hasCareLevelID {
+		var newCareLevelID primitive.ObjectID
+		var err error
+
+		// 解析 care_level_id，支持字符串映射或 ObjectID
+		switch v := val.(type) {
+		case string:
+			if v != "" {
+				newCareLevelID, err = primitive.ObjectIDFromHex(v)
+				if err != nil {
+					return errors.New("无效的护理级别ID格式")
+				}
+			}
+		case primitive.ObjectID:
+			newCareLevelID = v
+		}
+
+		updates["care_level_id"] = newCareLevelID
 	}
 
 	return s.customerRepo.Update(ctx, id, updates)
