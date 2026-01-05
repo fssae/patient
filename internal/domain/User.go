@@ -283,6 +283,24 @@ type CustomerService struct {
 	UpdatedAt   time.Time          `json:"updated_at" bson:"updated_at"`
 }
 
+// CustomerServiceResponse 客户购买的服务（包含关联信息）
+type CustomerServiceResponse struct {
+	ID           primitive.ObjectID `json:"id,omitempty"`
+	CustomerID   primitive.ObjectID `json:"customer_id"`
+	CustomerName string             `json:"customer_name"` // 客户姓名
+	ServiceID    primitive.ObjectID `json:"service_id"`
+	ServiceName  string             `json:"service_name"`        // 服务名称
+	ServiceDesc  string             `json:"service_description"` // 服务描述
+	Category     string             `json:"category"`            // 服务类别
+	Price        float64            `json:"price"`               // 服务价格
+	Unit         string             `json:"unit"`                // 计价单位
+	StartDate    time.Time          `json:"start_date"`
+	EndDate      time.Time          `json:"end_date,omitempty"`
+	Status       string             `json:"status"`
+	CreatedAt    time.Time          `json:"created_at"`
+	UpdatedAt    time.Time          `json:"updated_at"`
+}
+
 // ServiceAttention 服务关注（服务对象设置）
 type ServiceAttention struct {
 	ID         primitive.ObjectID `json:"id,omitempty" bson:"_id,omitempty"`

@@ -25,6 +25,7 @@ func NewServiceHandler(svc *service.ServerService) *ServiceHandler {
 func (h *ServiceHandler) RegisterRoutes(server gin.IRouter) {
 	group := server.Group("/api/services")
 	group.GET("", h.GetServiceList)
+	group.GET("/customer-service-list", h.GetCustomerServiceList)
 	group.GET("/:id", h.GetServiceById)
 	group.POST("", h.CreateService)
 	group.PUT("/:id", h.UpdateService)
@@ -32,6 +33,51 @@ func (h *ServiceHandler) RegisterRoutes(server gin.IRouter) {
 	group.POST("/purchase", h.PurchaseService)
 	group.GET("/customer/:customer_id", h.GetCustomerServices)
 	group.PUT("/customer-service/:id/end", h.EndService)
+}
+
+// GetCustomerServiceList 获取客户购买的服务列表（支持分页和筛选）
+// @Summary      获取客户服务列表
+// @Description  分页获取所有客户购买的服务记录，支持按客户ID、服务ID、状态筛选
+// @Tags         服务管理
+// @Accept       json
+// @Produce      json
+// @Param        customer_id  query     string  false  "客户ID"
+// @Param        service_id   query     string  false  "服务ID"
+// @Param        status       query     string  false  "状态：进行中/已结束/已取消"
+// @Param        skip         query     int     false  "跳过数量"  default(0)
+// @Param        limit        query     int     false  "每页数量"  default(20)
+// @Success      200          {object}  map[string]interface{}  "获取成功"
+// @Router       /services/customer-service-list [get]
+func (h *ServiceHandler) GetCustomerServiceList(c *gin.Context) {
+	customerIDStr := c.Query("customer_id")
+	serviceIDStr := c.Query("service_id")
+	status := c.Query("status")
+	skipStr := c.DefaultQuery("skip", "0")
+	limitStr := c.DefaultQuery("limit", "20")
+
+	skip, _ := strconv.ParseInt(skipStr, 10, 64)
+	limit, _ := strconv.ParseInt(limitStr, 10, 64)
+
+	// 构建筛选条件（ID无效则忽略）
+	customerID, _ := primitive.ObjectIDFromHex(customerIDStr)
+	serviceID, _ := primitive.ObjectIDFromHex(serviceIDStr)
+
+	list, total, err := h.svc.GetCustomerServiceList(c.Request.Context(), customerID, serviceID, status, skip, limit)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code": 500,
+			"msg":  err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":    200,
+		"msg":     "获取成功",
+		"success": true,
+		"data":    list,
+		"total":   total,
+	})
 }
 
 // CreateService 创建服务项目

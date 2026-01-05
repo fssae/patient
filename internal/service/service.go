@@ -121,6 +121,79 @@ func (s *ServerService) GetCustomerServices(ctx context.Context, customerID prim
 	return s.customerServiceRepo.FindByCustomerID(ctx, customerID)
 }
 
+// GetCustomerServiceList 获取客户服务列表（支持分页和筛选，包含关联信息）
+func (s *ServerService) GetCustomerServiceList(ctx context.Context, customerID, serviceID primitive.ObjectID, status string, skip, limit int64) ([]*domain.CustomerServiceResponse, int64, error) {
+	filter := bson.M{}
+	if !customerID.IsZero() {
+		filter["customer_id"] = customerID
+	}
+	if !serviceID.IsZero() {
+		filter["service_id"] = serviceID
+	}
+	if status != "" {
+		filter["status"] = status
+	}
+
+	list, total, err := s.customerServiceRepo.FindList(ctx, filter, skip, limit)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// 收集所有需要查询的 CustomerID 和 ServiceID
+	customerIDs := make(map[primitive.ObjectID]bool)
+	serviceIDs := make(map[primitive.ObjectID]bool)
+	for _, cs := range list {
+		customerIDs[cs.CustomerID] = true
+		serviceIDs[cs.ServiceID] = true
+	}
+
+	// 批量查询客户信息
+	customerMap := make(map[primitive.ObjectID]string)
+	for id := range customerIDs {
+		customer, err := s.customerRepo.FindById(ctx, id)
+		if err == nil && customer != nil {
+			customerMap[id] = customer.Name
+		}
+	}
+
+	// 批量查询服务信息
+	serviceMap := make(map[primitive.ObjectID]*domain.Service)
+	for id := range serviceIDs {
+		service, err := s.serviceRepo.FindById(ctx, id)
+		if err == nil && service != nil {
+			serviceMap[id] = service
+		}
+	}
+
+	// 组装响应数据
+	result := make([]*domain.CustomerServiceResponse, 0, len(list))
+	for _, cs := range list {
+		resp := &domain.CustomerServiceResponse{
+			ID:           cs.ID,
+			CustomerID:   cs.CustomerID,
+			CustomerName: customerMap[cs.CustomerID],
+			ServiceID:    cs.ServiceID,
+			ServiceName:  cs.ServiceName,
+			StartDate:    cs.StartDate,
+			EndDate:      cs.EndDate,
+			Status:       cs.Status,
+			CreatedAt:    cs.CreatedAt,
+			UpdatedAt:    cs.UpdatedAt,
+		}
+		// 填充服务详情
+		if svc, ok := serviceMap[cs.ServiceID]; ok {
+			resp.ServiceName = svc.Name
+			resp.ServiceDesc = svc.Description
+			resp.Category = svc.Category
+			resp.Price = svc.Price
+			resp.Unit = svc.Unit
+		}
+		result = append(result, resp)
+	}
+
+	return result, total, nil
+}
+
 // EndService 结束客户服务
 func (s *ServerService) EndService(ctx context.Context, customerServiceID primitive.ObjectID, endDate time.Time) error {
 	cs, err := s.customerServiceRepo.FindById(ctx, customerServiceID)
