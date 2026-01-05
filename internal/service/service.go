@@ -188,23 +188,10 @@ func (s *ServerService) GetCustomerServiceList(ctx context.Context, customerID, 
 
 	// 批量查询床位信息
 	bedMap := make(map[primitive.ObjectID]*domain.Bed)
-	roomIDs := make(map[primitive.ObjectID]bool)
 	for id := range bedIDs {
 		bed, err := s.bedRepo.FindById(ctx, id)
 		if err == nil && bed != nil {
 			bedMap[id] = bed
-			if !bed.RoomID.IsZero() {
-				roomIDs[bed.RoomID] = true
-			}
-		}
-	}
-
-	// 批量查询房间信息
-	roomMap := make(map[primitive.ObjectID]*domain.Room)
-	for id := range roomIDs {
-		room, err := s.roomRepo.FindById(ctx, id)
-		if err == nil && room != nil {
-			roomMap[id] = room
 		}
 	}
 
@@ -232,14 +219,12 @@ func (s *ServerService) GetCustomerServiceList(ctx context.Context, customerID, 
 			UpdatedAt:   cs.UpdatedAt,
 		}
 
-		// 填充客户相关信息（姓名、房间号、护理级别）
+		// 填充客户相关信息（姓名、床位号、护理级别）
 		if customer, ok := customerMap[cs.CustomerID]; ok {
 			resp.CustomerName = customer.Name
-			// 填充房间号
+			// 填充床位号
 			if bed, bedOk := bedMap[customer.BedID]; bedOk {
-				if room, roomOk := roomMap[bed.RoomID]; roomOk {
-					resp.RoomNumber = room.Number
-				}
+				resp.BedNumber = bed.Number
 			}
 			// 填充护理级别
 			if careLevel, clOk := careLevelMap[customer.CareLevelID]; clOk {
