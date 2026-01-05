@@ -589,7 +589,7 @@ func (s *RecordService) GetOutgoingList(ctx context.Context, name, startDate, en
 // UpdateRecord 更新客户的记录
 func (s *RecordService) UpdateRecord(ctx context.Context, record *domain.Record, customerID primitive.ObjectID, elderId string) error {
 	// 检查记录是否存在
-	_, err := s.recordRepo.FindById(ctx, record.ID)
+	_, err := s.recordRepo.FindByCustomerID(ctx, record.CustomerID)
 	if err != nil {
 		return err
 	}
