@@ -5,6 +5,7 @@ import (
 	"classroom-analysis/internal/repository"
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -613,10 +614,10 @@ func (s *RecordService) GetOutgoingList(ctx context.Context, name, startDate, en
 			"contact_phone": phone,
 			"outgoing_time": r.StartTime,
 			//TODO登记时候显示实际返回时间
-			"expected_return_time": "", // 暂无数据
+			"expected_return_time": r.ExpectedReturnTime, // 暂无数据
 			"actual_return_time":   r.EndTime,
 			"status":               currentStatus,
-			"destination":          r.Note, // 备注作为目的地
+			"destination":          r.Destination, // 备注作为目的地
 			// "customer_id" 用于前端操作 (登记返回等)?
 			"customer_id": r.CustomerID.Hex(),
 			"escort":      r.Escort,
@@ -664,6 +665,8 @@ func (s *RecordService) UpdateOutgoingRecord(ctx context.Context, req *domain.Up
 			return err
 		}
 		record.ExpectedReturnTime = expectedReturnTime
+
+		fmt.Println("Parsed ExpectedReturnTime:", expectedReturnTime)
 	}
 
 	// 更新records

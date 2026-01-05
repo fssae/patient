@@ -261,7 +261,6 @@ type Record struct {
 type UpdateRecordRequest struct {
 	ID                 string `json:"id"`
 	CustomerID         string `json:"customer_id"`        // 客户ID
-	ElderID            string `json:"elderId"`            // 老人姓名
 	EmergencyContact   string `json:"emergencyContact"`   // 紧急联系电话
 	ExpectedReturnTime string `json:"expectedReturnTime"` // 预计返回时间
 	Destination        string `json:"destination"`        // 目的地
