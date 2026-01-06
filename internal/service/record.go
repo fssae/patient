@@ -529,16 +529,22 @@ func (s *RecordService) GetCheckOutList(ctx context.Context, name, bedId, reason
 
 		days := int(r.EndTime.Sub(r.StartTime).Hours() / 24)
 
+		//通过r的customer_id查询beds的床位名称
+		bed, err := s.bedRepo.FindById(ctx, customer.BedID)
+		if err != nil {
+			return nil, err
+		}
+
 		item := map[string]interface{}{
 			"id":              r.ID.Hex(),
 			"customer_name":   customerName,
-			"room_number":     "-", // 记录中未存，且客户已退住，难以获取历史床位
 			"check_in_date":   r.StartTime,
 			"check_out_date":  r.EndTime,
 			"days":            days,
 			"care_level":      careLevel,
 			"care_level_name": careName.Name,
 			"reason":          r.Note,
+			"bed_number":      bed.Number,
 		}
 		results = append(results, item)
 	}
