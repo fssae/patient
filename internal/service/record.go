@@ -614,8 +614,9 @@ func (s *RecordService) GetOutgoingList(ctx context.Context, name, startDate, en
 			phone = customer.ContactPhone // 使用紧急联系人电话
 		}
 
-		//退住记录都不要
-		if r.Type == "退住" {
+		//退住记录和入住记录都不要
+		if r.Type == "退住" || r.Type == "入住" {
+			total--
 			continue
 		}
 
