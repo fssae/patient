@@ -23,7 +23,6 @@ func NewCareRecordHandler(svc *service.CareRecordService) *CareRecordHandler {
 
 func (h *CareRecordHandler) RegisterRoutes(server gin.IRouter) {
 	group := server.Group("/api/care-records")
-	//TODO添加按时间查询
 	group.GET("", h.GetList)
 	group.GET("/:id", h.GetById)
 	group.POST("", h.Create)

@@ -150,6 +150,18 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
+                        "description": "老人ID",
+                        "name": "customer_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "项目名称（模糊匹配）",
+                        "name": "service_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
                         "description": "状态：进行中/已结束/已取消",
                         "name": "status",
                         "in": "query"
@@ -3504,6 +3516,7 @@ const docTemplate = `{
             "required": [
                 "age",
                 "bed_id",
+                "check_in_date",
                 "contact_name",
                 "contact_phone",
                 "dietary_type",

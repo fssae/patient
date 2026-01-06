@@ -40,10 +40,35 @@ func NewServiceService(
 
 // GetCustomerServiceByGroup 获取客户服务列表（包含用户名称和服务名称）
 // 分页基于用户数量，skip=1 表示跳过1个用户，limit=10 表示返回10个用户的所有服务记录
-func (s *ServerService) GetCustomerServiceByGroup(ctx context.Context, status string, skip, limit int64) ([]*domain.CustomerServiceResponse, int64, error) {
+// customerID: 按老人ID过滤；serviceName: 按项目名称模糊匹配
+func (s *ServerService) GetCustomerServiceByGroup(ctx context.Context, customerID primitive.ObjectID, serviceName, status string, skip, limit int64) ([]*domain.CustomerServiceResponse, int64, error) {
 	filter := bson.M{}
+	if !customerID.IsZero() {
+		filter["customer_id"] = customerID
+	}
 	if status != "" {
 		filter["status"] = status
+	}
+
+	// 如果按项目名称筛选，需要先查询 services 表获取匹配的 service_id 列表
+	if serviceName != "" {
+		serviceFilter := bson.M{
+			"name": bson.M{"$regex": serviceName, "$options": "i"},
+		}
+		services, _, err := s.serviceRepo.FindList(ctx, serviceFilter, 0, 0)
+		if err != nil {
+			return nil, 0, err
+		}
+		if len(services) == 0 {
+			// 没有匹配的服务项目，直接返回空
+			return []*domain.CustomerServiceResponse{}, 0, nil
+		}
+		// 收集匹配的 service_id
+		matchedServiceIDs := make([]primitive.ObjectID, 0, len(services))
+		for _, svc := range services {
+			matchedServiceIDs = append(matchedServiceIDs, svc.ID)
+		}
+		filter["service_id"] = bson.M{"$in": matchedServiceIDs}
 	}
 
 	// 先获取所有符合条件的唯一用户ID列表（用于分页）
@@ -79,6 +104,10 @@ func (s *ServerService) GetCustomerServiceByGroup(ctx context.Context, status st
 	customerIDFilter := bson.M{"customer_id": bson.M{"$in": pagedCustomerIDs}}
 	if status != "" {
 		customerIDFilter["status"] = status
+	}
+	// 如果有 service_id 筛选条件，也要应用
+	if serviceIDFilter, ok := filter["service_id"]; ok {
+		customerIDFilter["service_id"] = serviceIDFilter
 	}
 	list, _, err := s.customerServiceRepo.FindList(ctx, customerIDFilter, 0, 0)
 	if err != nil {

@@ -274,6 +274,7 @@ definitions:
     required:
     - age
     - bed_id
+    - check_in_date
     - contact_name
     - contact_phone
     - dietary_type
@@ -683,6 +684,14 @@ paths:
       - application/json
       description: 分页获取所有客户购买的服务记录，按用户ID分组显示，包含用户名称和服务名称
       parameters:
+      - description: 老人ID
+        in: query
+        name: customer_id
+        type: string
+      - description: 项目名称（模糊匹配）
+        in: query
+        name: service_name
+        type: string
       - description: 状态：进行中/已结束/已取消
         in: query
         name: status

@@ -45,12 +45,16 @@ func (h *ServiceHandler) RegisterRoutes(server gin.IRouter) {
 // @Tags         服务管理
 // @Accept       json
 // @Produce      json
-// @Param        status  query     string  false  "状态：进行中/已结束/已取消"
-// @Param        skip    query     int     false  "跳过数量"  default(0)
-// @Param        limit   query     int     false  "每页数量"  default(20)
-// @Success      200     {object}  map[string]interface{}  "获取成功"
+// @Param        customer_id   query     string  false  "老人ID"
+// @Param        service_name  query     string  false  "项目名称（模糊匹配）"
+// @Param        status        query     string  false  "状态：进行中/已结束/已取消"
+// @Param        skip          query     int     false  "跳过数量"  default(0)
+// @Param        limit         query     int     false  "每页数量"  default(20)
+// @Success      200           {object}  map[string]interface{}  "获取成功"
 // @Router       /api/services/customer-services_by_group [get]
 func (h *ServiceHandler) GetCustomerService(c *gin.Context) {
+	customerIDStr := c.Query("customer_id")
+	serviceName := c.Query("service_name")
 	status := c.Query("status")
 	skipStr := c.DefaultQuery("skip", "0")
 	limitStr := c.DefaultQuery("limit", "20")
@@ -58,7 +62,10 @@ func (h *ServiceHandler) GetCustomerService(c *gin.Context) {
 	skip, _ := strconv.ParseInt(skipStr, 10, 64)
 	limit, _ := strconv.ParseInt(limitStr, 10, 64)
 
-	list, total, err := h.svc.GetCustomerServiceByGroup(c.Request.Context(), status, skip, limit)
+	// 解析老人ID（无效则忽略）
+	customerID, _ := primitive.ObjectIDFromHex(customerIDStr)
+
+	list, total, err := h.svc.GetCustomerServiceByGroup(c.Request.Context(), customerID, serviceName, status, skip, limit)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code": 500,
