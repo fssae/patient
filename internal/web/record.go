@@ -396,7 +396,13 @@ func (h *RecordHandler) GetOutgoingList(c *gin.Context) {
 	endDate := c.Query("end_date")
 	status := c.Query("status") // "全部"/"已外出"/"已返回"
 
-	list, err := h.svc.GetOutgoingList(c.Request.Context(), name, startDate, endDate, status)
+	skipStr := c.DefaultQuery("skip", "0")
+	limitStr := c.DefaultQuery("limit", "20")
+
+	skip, _ := strconv.ParseInt(skipStr, 10, 64)
+	limit, _ := strconv.ParseInt(limitStr, 10, 64)
+
+	list, total, err := h.svc.GetOutgoingList(c.Request.Context(), name, startDate, endDate, status, skip, limit)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code": 500,
@@ -410,6 +416,7 @@ func (h *RecordHandler) GetOutgoingList(c *gin.Context) {
 		"msg":     "获取成功",
 		"success": true,
 		"data":    list,
+		"total":   total,
 	})
 }
 

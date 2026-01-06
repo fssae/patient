@@ -228,7 +228,7 @@ func (s *RecordService) Outgoing(ctx context.Context, customerID primitive.Objec
 
 // Return 外出返回
 func (s *RecordService) Return(ctx context.Context, recordsID primitive.ObjectID, note, createdBy string) error {
-	//查找纪律
+	//查找记录
 	record, err := s.recordRepo.FindById(ctx, recordsID)
 	if err != nil {
 		return err
@@ -248,9 +248,8 @@ func (s *RecordService) Return(ctx context.Context, recordsID primitive.ObjectID
 
 	// 更新客户状态
 	var updates = map[string]interface{}{
-		"status":       "入住中",
-		"updated_at":   time.Now(),
-		"check_out_at": time.Time{},
+		"status":     "入住中",
+		"updated_at": time.Now(),
 	}
 	err = s.customerRepo.Update(ctx, customer.ID, updates)
 	if err != nil {
@@ -268,7 +267,6 @@ func (s *RecordService) Return(ctx context.Context, recordsID primitive.ObjectID
 		if records[i].Type == "外出" && records[i].EndTime.IsZero() {
 			records[i].EndTime = time.Now()
 			records[i].Note = note
-			records[i].Type = "入住" // 标记为已返回入住
 			return s.recordRepo.Update(ctx, records[i])
 		}
 	}
@@ -552,16 +550,15 @@ func (s *RecordService) GetCheckOutList(ctx context.Context, name, bedId, reason
 }
 
 // GetOutgoingList 获取外出登记信息列表
-func (s *RecordService) GetOutgoingList(ctx context.Context, name, startDate, endDate, status string) ([]map[string]interface{}, error) {
-	filter := bson.M{
-		"type": "外出",
-	}
+func (s *RecordService) GetOutgoingList(ctx context.Context, name, startDate, endDate, status string, skip, limit int64) ([]map[string]interface{}, int64, error) {
+	//获取以往外出（record里的入住）和现在外出（未返回）的记录
+	filter := bson.M{}
 
 	// 名字筛选
 	if name != "" {
 		customers, _, err := s.customerRepo.FindList(ctx, bson.M{"name": bson.M{"$regex": name, "$options": "i"}}, 0, 0)
 		if err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 		var customerIDs []primitive.ObjectID
 		for _, c := range customers {
@@ -570,30 +567,41 @@ func (s *RecordService) GetOutgoingList(ctx context.Context, name, startDate, en
 		if len(customerIDs) > 0 {
 			filter["customer_id"] = bson.M{"$in": customerIDs}
 		} else {
-			return []map[string]interface{}{}, nil
+			return []map[string]interface{}{}, 0, nil
 		}
 	}
 
 	// 外出时间范围 (StartTime)
-	if startDate != "" || endDate != "" {
-		dateFilter := bson.M{}
+	if startDate != "" {
 		if startDate != "" {
 			if t, err := time.Parse("2006-01-02", startDate); err == nil {
-				dateFilter["$gte"] = t
+				filter["start_time"] = bson.M{"$gte": t}
+			} else {
+				return nil, 0, err
 			}
 		}
-		if endDate != "" {
-			if t, err := time.Parse("2006-01-02", endDate); err == nil {
-				t = t.Add(24 * time.Hour)
-				dateFilter["$lt"] = t
+	}
+	// 状态筛选 已外出没有endDate,已返回有endDate
+	if status != "" {
+		switch status {
+		case "已返回":
+			filter["type"] = "入住" // 直接匹配
+			if endDate != "" {
+				if t, err := time.Parse("2006-01-02", endDate); err == nil {
+					filter["end_time"] = bson.M{"$lte": t}
+				} else {
+					return nil, 0, err
+				}
 			}
+		case "已外出":
+			filter["type"] = "外出" // 直接匹配
+			//已外出没有endDate
 		}
-		filter["start_time"] = dateFilter
 	}
 
-	records, _, err := s.recordRepo.FindList(ctx, filter, 0, 0)
+	records, total, err := s.recordRepo.FindList(ctx, filter, skip, limit)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	var results []map[string]interface{}
@@ -606,19 +614,16 @@ func (s *RecordService) GetOutgoingList(ctx context.Context, name, startDate, en
 			phone = customer.ContactPhone // 使用紧急联系人电话
 		}
 
-		isReturned := !r.EndTime.IsZero()
-		currentStatus := "已外出"
-		if isReturned {
-			currentStatus = "已返回"
+		//退住记录都不要
+		if r.Type == "退住" {
+			continue
 		}
 
-		if status != "" && status != "全部" {
-			if status == "已外出" && isReturned {
-				continue
-			}
-			if status == "已返回" && !isReturned {
-				continue
-			}
+		var currentStatus string
+		if r.EndTime.IsZero() {
+			currentStatus = "已外出"
+		} else {
+			currentStatus = "已返回"
 		}
 
 		item := map[string]interface{}{
@@ -637,7 +642,7 @@ func (s *RecordService) GetOutgoingList(ctx context.Context, name, startDate, en
 		}
 		results = append(results, item)
 	}
-	return results, nil
+	return results, total, nil
 }
 
 // UpdateOutgoingRecord 更新外出记录（包含所有业务逻辑）
