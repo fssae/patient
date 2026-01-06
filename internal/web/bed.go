@@ -3,9 +3,7 @@ package web
 import (
 	"classroom-analysis/internal/domain"
 	"classroom-analysis/internal/service"
-	"classroom-analysis/internal/util"
-	"net/http"
-	"strconv"
+	"classroom-analysis/internal/web/ginx"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -16,346 +14,119 @@ type BedHandler struct {
 }
 
 func NewBedHandler(svc *service.BedService) *BedHandler {
-	return &BedHandler{
-		svc: svc,
-	}
+	return &BedHandler{svc: svc}
 }
 
-// RegisterRoutes 注册路由
 func (h *BedHandler) RegisterRoutes(server gin.IRouter) {
 	group := server.Group("/api/beds")
-	group.GET("", h.GetList)
-	group.GET("/options/beds", h.GetBedOptions)
-	group.GET("/options/rooms", h.GetRoomOptions)
-	group.GET("/:id", h.GetById)
-	group.GET("/room/:room_id", h.GetByRoomID)
-	group.POST("/create", h.Create)
-	group.PUT("/:id", h.Update)
-	group.PUT("/:id/release", h.Release)
-	group.DELETE("/:id", h.DeleteBed)
+	group.GET("", ginx.Wrap(h.GetList))
+	group.GET("/options/beds", ginx.Wrap(h.GetBedOptions))
+	group.GET("/options/rooms", ginx.Wrap(h.GetRoomOptions))
+	group.GET("/:id", ginx.Wrap(h.GetById))
+	group.GET("/room/:room_id", ginx.Wrap(h.GetByRoomID))
+	group.POST("/create", ginx.WrapBody[domain.CreateBed](h.Create))
+	group.PUT("/:id", ginx.WrapBody[domain.Bed](h.Update))
+	group.PUT("/:id/release", ginx.Wrap(h.Release))
+	group.DELETE("/:id", ginx.Wrap(h.Delete))
 }
 
-// DeleteBed 删除床位
-// @Summary      删除床位
-// @Description  根据ID删除指定床位
-// @Tags         床位管理
-// @Accept       json
-// @Produce      json
-// @Param        id   path      string  true  "床位ID"
-// @Success      200  {object}  map[string]interface{}  "删除成功"
-// @Failure      400  {object}  map[string]interface{}  "请求参数错误"
-// @Router       /beds/{id} [delete]
-func (h *BedHandler) DeleteBed(c *gin.Context) {
-	idStr := c.Param("id")
-	id, err := primitive.ObjectIDFromHex(idStr)
-	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"code": 400,
-			"msg":  "无效的ID",
-		})
-		return
+func (h *BedHandler) Create(c *gin.Context, req domain.CreateBed) (ginx.Result, error) {
+	if err := h.svc.Create(c.Request.Context(), &req); err != nil {
+		return ginx.Fail(400, err.Error()), nil
 	}
-
-	err = h.svc.Delete(c.Request.Context(), id)
-	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"code": 400,
-			"msg":  err.Error(),
-		})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"code":    200,
-		"msg":     "删除成功",
-		"success": true,
-	})
+	return ginx.Ok("创建成功", gin.H{"room_id": req.RoomId}), nil
 }
 
-// Create 创建床位
-// @Summary      创建床位
-// @Description  创建新的床位记录
-// @Tags         床位管理
-// @Accept       json
-// @Produce      json
-// @Param        request  body      domain.CreateBed  true  "床位信息"
-// @Success      200      {object}  map[string]interface{}  "创建成功"
-// @Failure      400      {object}  map[string]interface{}  "请求参数错误"
-// @Router       /beds/create [post]
-func (h *BedHandler) Create(c *gin.Context) {
-	var req domain.CreateBed
-	if util.HandleError(c, c.ShouldBindJSON(&req)) {
-		return
-	}
-	err := h.svc.Create(c.Request.Context(), &req)
-	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"code": 400,
-			"msg":  err.Error(),
-		})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"code": 200,
-		"msg": gin.H{
-			"room_id": req.RoomId,
-		},
-		"success": true,
-	})
-}
-
-// GetById 获取床位详情
-// @Summary      获取床位详情
-// @Description  根据ID获取床位详细信息
-// @Tags         床位管理
-// @Accept       json
-// @Produce      json
-// @Param        id   path      string  true  "床位ID"
-// @Success      200  {object}  map[string]interface{}  "获取成功"
-// @Failure      400  {object}  map[string]interface{}  "无效的ID"
-// @Failure      404  {object}  map[string]interface{}  "床位不存在"
-// @Router       /beds/{id} [get]
-func (h *BedHandler) GetById(c *gin.Context) {
-	idStr := c.Param("id")
-	id, err := primitive.ObjectIDFromHex(idStr)
-	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"code": 400,
-			"msg":  "无效的ID",
-		})
-		return
+func (h *BedHandler) GetById(c *gin.Context) (ginx.Result, error) {
+	id, ok := ginx.GetId(c)
+	if !ok {
+		return ginx.Result{}, nil
 	}
 
 	bed, err := h.svc.GetById(c.Request.Context(), id)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"code": 500,
-			"msg":  err.Error(),
-		})
-		return
+		return ginx.Result{}, err
 	}
 	if bed == nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"code": 404,
-			"msg":  "床位不存在",
-		})
-		return
+		return ginx.Fail(404, "床位不存在"), nil
 	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"code":    200,
-		"msg":     "获取成功",
-		"success": true,
-		"data":    bed,
-	})
+	return ginx.Ok("获取成功", bed), nil
 }
 
-// GetByRoomID 根据房间ID获取床位列表
-// @Summary      根据房间ID获取床位列表
-// @Description  获取指定房间下的所有床位
-// @Tags         床位管理
-// @Accept       json
-// @Produce      json
-// @Param        room_id  path      string  true  "房间ID"
-// @Success      200      {object}  map[string]interface{}  "获取成功"
-// @Router       /beds/room/{room_id} [get]
-func (h *BedHandler) GetByRoomID(c *gin.Context) {
+func (h *BedHandler) GetByRoomID(c *gin.Context) (ginx.Result, error) {
 	roomIDStr := c.Param("room_id")
 	roomID, err := primitive.ObjectIDFromHex(roomIDStr)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"code": 400,
-			"msg":  "无效的房间ID",
-		})
-		return
+		return ginx.Fail(400, "无效的房间ID"), nil
 	}
-
 	beds, err := h.svc.GetByRoomID(c.Request.Context(), roomID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"code": 500,
-			"msg":  err.Error(),
-		})
-		return
+		return ginx.Result{}, err
 	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"code":    200,
-		"msg":     "获取成功",
-		"success": true,
-		"data":    beds,
-	})
+	return ginx.Ok("获取成功", beds), nil
 }
 
-// GetList 获取床位列表
-// @Summary      获取床位列表
-// @Description  根据条件分页获取床位列表
-// @Tags         床位管理
-// @Accept       json
-// @Produce      json
-// @Param        room_number  query     string  false  "房间号"
-// @Param        bed_number   query     string  false  "床位号"
-// @Param        status       query     string  false  "状态"
-// @Param        skip         query     int     false  "跳过数量"  default(0)
-// @Param        limit        query     int     false  "每页数量"  default(20)
-// @Success      200          {object}  map[string]interface{}  "获取成功"
-// @Router       /beds [get]
-func (h *BedHandler) GetList(c *gin.Context) {
+func (h *BedHandler) GetList(c *gin.Context) (ginx.Result, error) {
 	roomNumber := c.Query("room_number")
 	bedNumber := c.Query("bed_number")
 	status := c.Query("status")
-	skipStr := c.DefaultQuery("skip", "0")
-	limitStr := c.DefaultQuery("limit", "20")
+	page := ginx.GetPage(c)
 
-	skip, _ := strconv.ParseInt(skipStr, 10, 64)
-	limit, _ := strconv.ParseInt(limitStr, 10, 64)
-
-	list, total, err := h.svc.GetList(c.Request.Context(), roomNumber, bedNumber, status, skip, limit)
+	list, total, err := h.svc.GetList(c.Request.Context(), roomNumber, bedNumber, status, page.Skip, page.Limit)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"code": 500,
-			"msg":  err.Error(),
-		})
-		return
+		return ginx.Result{}, err
 	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"code":    200,
-		"msg":     "获取成功",
-		"success": true,
-		"data":    list,
-		"total":   total,
-	})
+	return ginx.OkList("获取成功", list, total), nil
 }
 
-// Update 更新床位信息
-// @Summary      更新床位
-// @Description  更新床位信息
-// @Tags         床位管理
-// @Accept       json
-// @Produce      json
-// @Param        id       path      string             true  "床位ID"
-// @Param        request  body      domain.Bed  true  "床位信息"
-// @Success      200      {object}  map[string]interface{}  "更新成功"
-// @Failure      400      {object}  map[string]interface{}  "请求参数错误"
-// @Router       /beds/{id} [put]
-func (h *BedHandler) Update(c *gin.Context) {
-	idStr := c.Param("id")
-	id, err := primitive.ObjectIDFromHex(idStr)
-	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"code": 400,
-			"msg":  "无效的床位ID",
-		})
-		return
+func (h *BedHandler) Update(c *gin.Context, req domain.Bed) (ginx.Result, error) {
+	id, ok := ginx.GetId(c)
+	if !ok {
+		return ginx.Result{}, nil
 	}
 
-	var req domain.Bed
-	if util.HandleError(c, c.ShouldBindJSON(&req)) {
-		return
+	if err := h.svc.Update(c.Request.Context(), id, &req); err != nil {
+		return ginx.Fail(400, err.Error()), nil
 	}
-
-	err = h.svc.Update(c.Request.Context(), id, &req)
-	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"code": 400,
-			"msg":  err.Error(),
-		})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"code":    200,
-		"msg":     "更新成功",
-		"success": true,
-	})
+	return ginx.OkMsg("更新成功"), nil
 }
 
-// Release 释放床位
-// @Summary      释放床位
-// @Description  将指定床位设置为待入住状态
-// @Tags         床位管理
-// @Accept       json
-// @Produce      json
-// @Param        id   path      string  true  "床位ID"
-// @Success      200  {object}  map[string]interface{}  "释放成功"
-// @Router       /beds/{id}/release [put]
-func (h *BedHandler) Release(c *gin.Context) {
-	bedIDStr := c.Param("id")
-	bedID, err := primitive.ObjectIDFromHex(bedIDStr)
-	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"code": 400,
-			"msg":  "无效的床位ID",
-		})
-		return
+func (h *BedHandler) Release(c *gin.Context) (ginx.Result, error) {
+	id, ok := ginx.GetId(c)
+	if !ok {
+		return ginx.Result{}, nil
 	}
 
-	err = h.svc.Release(c.Request.Context(), bedID)
-	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"code": 400,
-			"msg":  err.Error(),
-		})
-		return
+	if err := h.svc.Release(c.Request.Context(), id); err != nil {
+		return ginx.Fail(400, err.Error()), nil
 	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"code":    200,
-		"msg":     "释放成功",
-		"success": true,
-	})
+	return ginx.OkMsg("释放成功"), nil
 }
 
-// GetBedOptions 获取床位选项列表
-// @Summary      获取床位选项
-// @Description  获取用于下拉选择的床位列表
-// @Tags         床位管理
-// @Accept       json
-// @Produce      json
-// @Success      200  {object}  map[string]interface{}  "获取成功"
-// @Router       /beds/options/beds [get]
-func (h *BedHandler) GetBedOptions(c *gin.Context) {
+func (h *BedHandler) Delete(c *gin.Context) (ginx.Result, error) {
+	id, ok := ginx.GetId(c)
+	if !ok {
+		return ginx.Result{}, nil
+	}
+
+	if err := h.svc.Delete(c.Request.Context(), id); err != nil {
+		return ginx.Fail(400, err.Error()), nil
+	}
+	return ginx.OkMsg("删除成功"), nil
+}
+
+func (h *BedHandler) GetBedOptions(c *gin.Context) (ginx.Result, error) {
 	options, err := h.svc.GetBedOptions(c.Request.Context())
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"code": 500,
-			"msg":  err.Error(),
-		})
-		return
+		return ginx.Result{}, err
 	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"code":    200,
-		"msg":     "获取成功",
-		"success": true,
-		"data":    options,
-	})
+	return ginx.Ok("获取成功", options), nil
 }
 
-// GetRoomOptions 获取房间选项列表
-// @Summary      获取房间选项
-// @Description  获取用于下拉选择的房间列表
-// @Tags         床位管理
-// @Accept       json
-// @Produce      json
-// @Success      200  {object}  map[string]interface{}  "获取成功"
-// @Router       /beds/options/rooms [get]
-func (h *BedHandler) GetRoomOptions(c *gin.Context) {
+func (h *BedHandler) GetRoomOptions(c *gin.Context) (ginx.Result, error) {
 	options, err := h.svc.GetRoomOptions(c.Request.Context())
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"code": 500,
-			"msg":  err.Error(),
-		})
-		return
+		return ginx.Result{}, err
 	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"code":    200,
-		"msg":     "获取成功",
-		"success": true,
-		"data":    options,
-	})
+	return ginx.Ok("获取成功", options), nil
 }

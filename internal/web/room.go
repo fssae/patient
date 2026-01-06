@@ -3,11 +3,9 @@ package web
 import (
 	"classroom-analysis/internal/domain"
 	"classroom-analysis/internal/service"
-	"net/http"
-	"strconv"
+	"classroom-analysis/internal/web/ginx"
 
 	"github.com/gin-gonic/gin"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type RoomHandler struct {
@@ -15,218 +13,80 @@ type RoomHandler struct {
 }
 
 func NewRoomHandler(svc *service.RoomService) *RoomHandler {
-	return &RoomHandler{
-		svc: svc,
-	}
+	return &RoomHandler{svc: svc}
 }
 
-// RegisterRoutes 注册路由
 func (h *RoomHandler) RegisterRoutes(server gin.IRouter) {
 	group := server.Group("/api/rooms")
-	group.GET("", h.GetList)
-	group.GET("/:id", h.GetById)
-	group.POST("/create", h.Create)
-	group.PUT("/:id", h.Update)
-	group.DELETE("/:id", h.Delete)
+	group.GET("", ginx.Wrap(h.GetList))
+	group.GET("/:id", ginx.Wrap(h.GetById))
+	group.POST("/create", ginx.WrapBody[domain.Room](h.Create))
+	group.PUT("/:id", ginx.WrapBody[domain.Room](h.Update))
+	group.DELETE("/:id", ginx.Wrap(h.Delete))
 }
 
-// Create 创建房间
-// @Summary      创建房间
-// @Description  创建新的房间记录
-// @Tags         房间管理
-// @Accept       json
-// @Produce      json
-// @Param        request  body      domain.Room  true  "房间信息"
-// @Success      200      {object}  map[string]interface{}  "创建成功"
-// @Router       /rooms/create [post]
-func (h *RoomHandler) Create(c *gin.Context) {
-	var req domain.Room
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"code": 400,
-			"msg":  "请求参数错误: " + err.Error(),
-		})
-		return
+func (h *RoomHandler) Create(c *gin.Context, req domain.Room) (ginx.Result, error) {
+	if err := h.svc.Create(c.Request.Context(), &req); err != nil {
+		return ginx.Fail(400, err.Error()), nil
 	}
-
-	err := h.svc.Create(c.Request.Context(), &req)
-	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"code": 400,
-			"msg":  err.Error(),
-		})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"code":    200,
-		"msg":     "创建成功",
-		"success": true,
-	})
+	return ginx.OkMsg("创建成功"), nil
 }
 
-// GetById 获取房间详情
-// @Summary      获取详情
-// @Description  根据ID获取房间详情
-// @Tags         房间管理
-// @Accept       json
-// @Produce      json
-// @Param        id   path      string  true  "房间ID"
-// @Success      200  {object}  map[string]interface{}  "获取成功"
-// @Router       /rooms/{id} [get]
-func (h *RoomHandler) GetById(c *gin.Context) {
-	idStr := c.Param("id")
-	id, err := primitive.ObjectIDFromHex(idStr)
-	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"code": 400,
-			"msg":  "无效的ID",
-		})
-		return
+func (h *RoomHandler) GetById(c *gin.Context) (ginx.Result, error) {
+	id, ok := ginx.GetId(c)
+	if !ok {
+		return ginx.Result{}, nil
 	}
 
 	room, err := h.svc.GetById(c.Request.Context(), id)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"code": 500,
-			"msg":  err.Error(),
-		})
-		return
+		return ginx.Result{}, err
 	}
 	if room == nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"code": 404,
-			"msg":  "房间不存在",
-		})
-		return
+		return ginx.Fail(404, "房间不存在"), nil
 	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"code":    200,
-		"msg":     "获取成功",
-		"success": true,
-		"data":    room,
-	})
+	return ginx.Ok("获取成功", room), nil
 }
 
-// GetList 获取房间列表
-// @Summary      获取房间列表
-// @Description  分页获取房间列表，支持按状态和楼层筛选
-// @Tags         房间管理
-// @Accept       json
-// @Produce      json
-// @Param        status  query     string  false  "房间状态：可用/已满/维护中"
-// @Param        floor   query     int     false  "楼层"
-// @Param        skip    query     int     false  "跳过数量"  default(0)
-// @Param        limit   query     int     false  "每页数量"  default(20)
-// @Success      200     {object}  map[string]interface{}  "获取成功"
-// @Router       /rooms [get]
-func (h *RoomHandler) GetList(c *gin.Context) {
+func (h *RoomHandler) GetList(c *gin.Context) (ginx.Result, error) {
 	status := c.Query("status")
-	room := c.Query("room")
-	skipStr := c.DefaultQuery("skip", "0")
-	limitStr := c.DefaultQuery("limit", "20")
-
-	skip, _ := strconv.ParseInt(skipStr, 10, 64)
-	limit, _ := strconv.ParseInt(limitStr, 10, 64)
-	floor, _ := strconv.Atoi(room)
-
-	list, total, err := h.svc.GetList(c.Request.Context(), status, floor, skip, limit)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"code": 500,
-			"msg":  err.Error(),
-		})
-		return
+	floor := 0
+	if room := c.Query("room"); room != "" {
+		for _, ch := range room {
+			if ch >= '0' && ch <= '9' {
+				floor = floor*10 + int(ch-'0')
+			}
+		}
 	}
+	page := ginx.GetPage(c)
 
-	c.JSON(http.StatusOK, gin.H{
-		"code":    200,
-		"msg":     "获取成功",
-		"success": true,
-		"data":    list,
-		"total":   total,
-	})
+	list, total, err := h.svc.GetList(c.Request.Context(), status, floor, page.Skip, page.Limit)
+	if err != nil {
+		return ginx.Result{}, err
+	}
+	return ginx.OkList("获取成功", list, total), nil
 }
 
-// Update 更新房间
-// @Summary      更新房间
-// @Description  根据ID更新房间信息
-// @Tags         房间管理
-// @Accept       json
-// @Produce      json
-// @Param        id       path      string       true  "房间ID"
-// @Param        request  body      domain.Room  true  "房间信息"
-// @Success      200      {object}  map[string]interface{}  "更新成功"
-// @Router       /rooms/{id} [put]
-func (h *RoomHandler) Update(c *gin.Context) {
-	idStr := c.Param("id")
-	id, err := primitive.ObjectIDFromHex(idStr)
-	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"code": 400,
-			"msg":  "无效的ID",
-		})
-		return
+func (h *RoomHandler) Update(c *gin.Context, req domain.Room) (ginx.Result, error) {
+	id, ok := ginx.GetId(c)
+	if !ok {
+		return ginx.Result{}, nil
 	}
 
-	var req domain.Room
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"code": 400,
-			"msg":  "请求参数错误: " + err.Error(),
-		})
-		return
+	if err := h.svc.Update(c.Request.Context(), id, &req); err != nil {
+		return ginx.Fail(400, err.Error()), nil
 	}
-
-	err = h.svc.Update(c.Request.Context(), id, &req)
-	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"code": 400,
-			"msg":  err.Error(),
-		})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"code":    200,
-		"msg":     "更新成功",
-		"success": true,
-	})
+	return ginx.OkMsg("更新成功"), nil
 }
 
-// Delete 删除房间
-// @Summary      删除房间
-// @Description  根据ID删除房间
-// @Tags         房间管理
-// @Accept       json
-// @Produce      json
-// @Param        id   path      string  true  "房间ID"
-// @Success      200  {object}  map[string]interface{}  "删除成功"
-// @Router       /rooms/{id} [delete]
-func (h *RoomHandler) Delete(c *gin.Context) {
-	idStr := c.Param("id")
-	id, err := primitive.ObjectIDFromHex(idStr)
-	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"code": 400,
-			"msg":  "无效的ID",
-		})
-		return
+func (h *RoomHandler) Delete(c *gin.Context) (ginx.Result, error) {
+	id, ok := ginx.GetId(c)
+	if !ok {
+		return ginx.Result{}, nil
 	}
 
-	err = h.svc.Delete(c.Request.Context(), id)
-	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"code": 400,
-			"msg":  err.Error(),
-		})
-		return
+	if err := h.svc.Delete(c.Request.Context(), id); err != nil {
+		return ginx.Fail(400, err.Error()), nil
 	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"code":    200,
-		"msg":     "删除成功",
-		"success": true,
-	})
+	return ginx.OkMsg("删除成功"), nil
 }

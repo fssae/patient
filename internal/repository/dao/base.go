@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -84,4 +85,15 @@ func (d *BaseDAO[T]) Count(ctx context.Context, filter bson.M) (int64, error) {
 // UpdateOne 通用更新
 func (d *BaseDAO[T]) UpdateOne(ctx context.Context, filter bson.M, update bson.M, opts ...*options.UpdateOptions) (*mongo.UpdateResult, error) {
 	return d.Coll.UpdateOne(ctx, filter, update, opts...)
+}
+
+// DeleteOne 根据ID删除
+func (d *BaseDAO[T]) DeleteOne(ctx context.Context, id primitive.ObjectID) error {
+	_, err := d.Coll.DeleteOne(ctx, bson.M{"_id": id})
+	return err
+}
+
+// FindById 根据ID查询
+func (d *BaseDAO[T]) FindById(ctx context.Context, id primitive.ObjectID) (*T, error) {
+	return d.FindOne(ctx, bson.M{"_id": id})
 }

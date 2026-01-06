@@ -8,16 +8,15 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type CustomerDAO struct {
-	collection *mongo.Collection
+	BaseDAO[domain.Customer]
 }
 
 func NewCustomerDAO(db *mongo.Database) *CustomerDAO {
 	return &CustomerDAO{
-		collection: db.Collection("customers"),
+		BaseDAO: NewBaseDAO[domain.Customer](db, "customers"),
 	}
 }
 
@@ -25,7 +24,7 @@ func NewCustomerDAO(db *mongo.Database) *CustomerDAO {
 func (dao *CustomerDAO) Create(ctx context.Context, customer *domain.Customer) error {
 	customer.CreatedAt = time.Now()
 	customer.UpdatedAt = time.Now()
-	result, err := dao.collection.InsertOne(ctx, customer)
+	result, err := dao.Coll.InsertOne(ctx, customer)
 	if err != nil {
 		return err
 	}
@@ -33,65 +32,20 @@ func (dao *CustomerDAO) Create(ctx context.Context, customer *domain.Customer) e
 	return nil
 }
 
-// FindById 根据ID查找客户
-func (dao *CustomerDAO) FindById(ctx context.Context, id primitive.ObjectID) (*domain.Customer, error) {
-	var customer domain.Customer
-	err := dao.collection.FindOne(ctx, bson.M{"_id": id}).Decode(&customer)
-	if err != nil {
-		if err == mongo.ErrNoDocuments {
-			return nil, nil
-		}
-		return nil, err
-	}
-	return &customer, nil
-}
-
 // FindByUserID 根据用户ID查找客户
 func (dao *CustomerDAO) FindByUserID(ctx context.Context, userID primitive.ObjectID) (*domain.Customer, error) {
-	var customer domain.Customer
-	err := dao.collection.FindOne(ctx, bson.M{"user_id": userID}).Decode(&customer)
-	if err != nil {
-		if err == mongo.ErrNoDocuments {
-			return nil, nil
-		}
-		return nil, err
-	}
-	return &customer, nil
+	return dao.FindOne(ctx, bson.M{"user_id": userID})
 }
 
 // FindList 查询客户列表
 func (dao *CustomerDAO) FindList(ctx context.Context, filter bson.M, skip, limit int64) ([]*domain.Customer, int64, error) {
-	opts := options.Find()
-	if limit > 0 {
-		opts.SetLimit(limit)
-	}
-	if skip > 0 {
-		opts.SetSkip(skip)
-	}
-
-	cursor, err := dao.collection.Find(ctx, filter, opts)
-	if err != nil {
-		return nil, 0, err
-	}
-	defer cursor.Close(ctx)
-
-	var results []*domain.Customer
-	if err = cursor.All(ctx, &results); err != nil {
-		return nil, 0, err
-	}
-
-	total, err := dao.collection.CountDocuments(ctx, filter)
-	if err != nil {
-		return nil, 0, err
-	}
-
-	return results, total, nil
+	return dao.BaseDAO.FindList(ctx, filter, skip, limit, nil)
 }
 
 // Update 更新客户信息
 func (dao *CustomerDAO) Update(ctx context.Context, id primitive.ObjectID, updates map[string]interface{}) error {
 	updates["updated_at"] = time.Now()
-	_, err := dao.collection.UpdateOne(
+	_, err := dao.Coll.UpdateOne(
 		ctx,
 		bson.M{"_id": id},
 		bson.M{"$set": updates},
@@ -101,6 +55,5 @@ func (dao *CustomerDAO) Update(ctx context.Context, id primitive.ObjectID, updat
 
 // Delete 删除客户
 func (dao *CustomerDAO) Delete(ctx context.Context, id primitive.ObjectID) error {
-	_, err := dao.collection.DeleteOne(ctx, bson.M{"_id": id})
-	return err
+	return dao.DeleteOne(ctx, id)
 }

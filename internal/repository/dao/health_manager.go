@@ -8,16 +8,15 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type HealthManagerDAO struct {
-	collection *mongo.Collection
+	BaseDAO[domain.HealthManager]
 }
 
 func NewHealthManagerDAO(db *mongo.Database) *HealthManagerDAO {
 	return &HealthManagerDAO{
-		collection: db.Collection("health_managers"),
+		BaseDAO: NewBaseDAO[domain.HealthManager](db, "health_managers"),
 	}
 }
 
@@ -25,7 +24,7 @@ func NewHealthManagerDAO(db *mongo.Database) *HealthManagerDAO {
 func (dao *HealthManagerDAO) Create(ctx context.Context, manager *domain.HealthManager) error {
 	manager.CreatedAt = time.Now()
 	manager.UpdatedAt = time.Now()
-	result, err := dao.collection.InsertOne(ctx, manager)
+	result, err := dao.Coll.InsertOne(ctx, manager)
 	if err != nil {
 		return err
 	}
@@ -35,63 +34,18 @@ func (dao *HealthManagerDAO) Create(ctx context.Context, manager *domain.HealthM
 
 // FindByPhone 根据手机号查找健康管家
 func (dao *HealthManagerDAO) FindByPhone(ctx context.Context, phone string) (*domain.HealthManager, error) {
-	var manager domain.HealthManager
-	err := dao.collection.FindOne(ctx, bson.M{"phone": phone}).Decode(&manager)
-	if err != nil {
-		if err == mongo.ErrNoDocuments {
-			return nil, nil
-		}
-		return nil, err
-	}
-	return &manager, nil
-}
-
-// FindById 根据ID查找健康管家
-func (dao *HealthManagerDAO) FindById(ctx context.Context, id primitive.ObjectID) (*domain.HealthManager, error) {
-	var manager domain.HealthManager
-	err := dao.collection.FindOne(ctx, bson.M{"_id": id}).Decode(&manager)
-	if err != nil {
-		if err == mongo.ErrNoDocuments {
-			return nil, nil
-		}
-		return nil, err
-	}
-	return &manager, nil
+	return dao.FindOne(ctx, bson.M{"phone": phone})
 }
 
 // FindList 查询健康管家列表
 func (dao *HealthManagerDAO) FindList(ctx context.Context, filter bson.M, skip, limit int64) ([]*domain.HealthManager, int64, error) {
-	opts := options.Find()
-	if limit > 0 {
-		opts.SetLimit(limit)
-	}
-	if skip > 0 {
-		opts.SetSkip(skip)
-	}
-
-	cursor, err := dao.collection.Find(ctx, filter, opts)
-	if err != nil {
-		return nil, 0, err
-	}
-	defer cursor.Close(ctx)
-
-	var results []*domain.HealthManager
-	if err = cursor.All(ctx, &results); err != nil {
-		return nil, 0, err
-	}
-
-	total, err := dao.collection.CountDocuments(ctx, filter)
-	if err != nil {
-		return nil, 0, err
-	}
-
-	return results, total, nil
+	return dao.BaseDAO.FindList(ctx, filter, skip, limit, nil)
 }
 
 // Update 更新健康管家信息
 func (dao *HealthManagerDAO) Update(ctx context.Context, manager *domain.HealthManager) error {
 	manager.UpdatedAt = time.Now()
-	_, err := dao.collection.UpdateOne(
+	_, err := dao.Coll.UpdateOne(
 		ctx,
 		bson.M{"_id": manager.ID},
 		bson.M{"$set": manager},
@@ -101,6 +55,5 @@ func (dao *HealthManagerDAO) Update(ctx context.Context, manager *domain.HealthM
 
 // Delete 删除健康管家
 func (dao *HealthManagerDAO) Delete(ctx context.Context, id primitive.ObjectID) error {
-	_, err := dao.collection.DeleteOne(ctx, bson.M{"_id": id})
-	return err
+	return dao.DeleteOne(ctx, id)
 }

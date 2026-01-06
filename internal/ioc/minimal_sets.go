@@ -19,6 +19,11 @@ var MinimalSet = wire.NewSet(
 	NewLogger,
 	NewMinioClient,
 
+	// Qmgo (专用于 CareRecord)
+	InitQmgoClient,
+	InitQmgoDatabase,
+	InitQmgoCareRecordCollection,
+
 	// DAO层
 
 	dao.NewFileDao,

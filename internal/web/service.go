@@ -3,8 +3,7 @@ package web
 import (
 	"classroom-analysis/internal/domain"
 	"classroom-analysis/internal/service"
-	"net/http"
-	"strconv"
+	"classroom-analysis/internal/web/ginx"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -16,560 +15,187 @@ type ServiceHandler struct {
 }
 
 func NewServiceHandler(svc *service.ServerService) *ServiceHandler {
-	return &ServiceHandler{
-		svc: svc,
-	}
+	return &ServiceHandler{svc: svc}
 }
 
-// RegisterRoutes 注册路由
 func (h *ServiceHandler) RegisterRoutes(server gin.IRouter) {
 	group := server.Group("/api/services")
-	group.GET("", h.GetServiceList)
-	group.GET("/customer-service-list", h.GetCustomerServiceList)
-	group.GET("/:id", h.GetServiceById)
-	group.POST("", h.CreateService)
-	group.PUT("/:id", h.UpdateService)
-	group.DELETE("/:id", h.DeleteService)
-	group.POST("/purchase", h.PurchaseService)
-	group.GET("/customer/:customer_id", h.GetCustomerServices)
-	group.PUT("/customer_service/:id/end", h.EndService)
-	group.PUT("/customer_service/:id/end_date", h.UpdateCustomerServiceEndDate)
-	group.PUT("/customer_service/:id/cancel", h.CancelCustomerService)
-	//获取客户服务列表，去重
-	group.GET("/customer-services_by_group", h.GetCustomerService)
+	group.GET("", ginx.Wrap(h.GetServiceList))
+	group.GET("/customer-service-list", ginx.Wrap(h.GetCustomerServiceList))
+	group.GET("/:id", ginx.Wrap(h.GetServiceById))
+	group.POST("", ginx.WrapBody[domain.Service](h.CreateService))
+	group.PUT("/:id", ginx.WrapBody[domain.Service](h.UpdateService))
+	group.DELETE("/:id", ginx.Wrap(h.DeleteService))
+	group.POST("/purchase", ginx.WrapBody[domain.PurchaseServiceRequest](h.PurchaseService))
+	group.GET("/customer/:customer_id", ginx.Wrap(h.GetCustomerServices))
+	group.PUT("/customer_service/:id/end", ginx.WrapBody[domain.EndServiceRequest](h.EndService))
+	group.PUT("/customer_service/:id/end_date", ginx.WrapBody[domain.EndServiceRequest](h.UpdateCustomerServiceEndDate))
+	group.PUT("/customer_service/:id/cancel", ginx.Wrap(h.CancelCustomerService))
+	group.GET("/customer-services_by_group", ginx.Wrap(h.GetCustomerService))
 }
 
-// GetCustomerService 获取按用户分组的客户服务列表（包含用户名称和服务名称）
-// @Summary      获取按用户分组的客户服务列表
-// @Description  分页获取所有客户购买的服务记录，按用户ID分组显示，包含用户名称和服务名称
-// @Tags         服务管理
-// @Accept       json
-// @Produce      json
-// @Param        customer_id   query     string  false  "老人ID"
-// @Param        service_name  query     string  false  "项目名称（模糊匹配）"
-// @Param        status        query     string  false  "状态：进行中/已结束/已取消"
-// @Param        skip          query     int     false  "跳过数量"  default(0)
-// @Param        limit         query     int     false  "每页数量"  default(20)
-// @Success      200           {object}  map[string]interface{}  "获取成功"
-// @Router       /api/services/customer-services_by_group [get]
-func (h *ServiceHandler) GetCustomerService(c *gin.Context) {
-	customerIDStr := c.Query("customer_id")
-	serviceName := c.Query("service_name")
-	status := c.Query("status")
-	skipStr := c.DefaultQuery("skip", "0")
-	limitStr := c.DefaultQuery("limit", "20")
-
-	skip, _ := strconv.ParseInt(skipStr, 10, 64)
-	limit, _ := strconv.ParseInt(limitStr, 10, 64)
-
-	// 解析老人ID（无效则忽略）
-	customerID, _ := primitive.ObjectIDFromHex(customerIDStr)
-
-	list, total, err := h.svc.GetCustomerServiceByGroup(c.Request.Context(), customerID, serviceName, status, skip, limit)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"code": 500,
-			"msg":  err.Error(),
-		})
-		return
+func (h *ServiceHandler) CreateService(c *gin.Context, req domain.Service) (ginx.Result, error) {
+	if err := h.svc.CreateService(c.Request.Context(), &req); err != nil {
+		return ginx.Fail(400, err.Error()), nil
 	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"code":    200,
-		"msg":     "获取成功",
-		"success": true,
-		"data":    list,
-		"total":   total,
-	})
+	return ginx.OkMsg("创建成功"), nil
 }
 
-// GetCustomerServiceList 获取客户购买的服务列表（支持分页和筛选）
-// @Summary      获取客户服务列表
-// @Description  分页获取所有客户购买的服务记录，支持按客户ID、服务ID、状态筛选
-// @Tags         服务管理
-// @Accept       json
-// @Produce      json
-// @Param        customer_id  query     string  false  "客户ID"
-// @Param        service_id   query     string  false  "服务ID"
-// @Param        status       query     string  false  "状态：进行中/已结束/已取消"
-// @Param        skip         query     int     false  "跳过数量"  default(0)
-// @Param        limit        query     int     false  "每页数量"  default(20)
-// @Success      200          {object}  map[string]interface{}  "获取成功"
-// @Router       /services/customer-service-list [get]
-func (h *ServiceHandler) GetCustomerServiceList(c *gin.Context) {
-	customerIDStr := c.Query("customer_id")
-	serviceIDStr := c.Query("service_id")
-	status := c.Query("status")
-	skipStr := c.DefaultQuery("skip", "0")
-	limitStr := c.DefaultQuery("limit", "20")
-
-	skip, _ := strconv.ParseInt(skipStr, 10, 64)
-	limit, _ := strconv.ParseInt(limitStr, 10, 64)
-
-	// 构建筛选条件（ID无效则忽略）
-	customerID, _ := primitive.ObjectIDFromHex(customerIDStr)
-	serviceID, _ := primitive.ObjectIDFromHex(serviceIDStr)
-
-	list, total, err := h.svc.GetCustomerServiceList(c.Request.Context(), customerID, serviceID, status, skip, limit)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"code": 500,
-			"msg":  err.Error(),
-		})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"code":    200,
-		"msg":     "获取成功",
-		"success": true,
-		"data":    list,
-		"total":   total,
-	})
-}
-
-// CreateService 创建服务项目
-// @Summary      创建服务项目
-// @Description  添加新的服务项目定义
-// @Tags         服务管理
-// @Accept       json
-// @Produce      json
-// @Param        request  body      domain.Service  true  "服务项目信息"
-// @Success      200      {object}  map[string]interface{}  "创建成功"
-// @Router       /services [post]
-func (h *ServiceHandler) CreateService(c *gin.Context) {
-	var req domain.Service
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"code": 400,
-			"msg":  "请求参数错误: " + err.Error(),
-		})
-		return
-	}
-
-	err := h.svc.CreateService(c.Request.Context(), &req)
-	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"code": 400,
-			"msg":  err.Error(),
-		})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"code":    200,
-		"msg":     "创建成功",
-		"success": true,
-	})
-}
-
-// GetServiceById 获取服务项目详情
-// @Summary      获取详情
-// @Description  根据ID获取服务项目详情
-// @Tags         服务管理
-// @Accept       json
-// @Produce      json
-// @Param        id   path      string  true  "服务项目ID"
-// @Success      200  {object}  map[string]interface{}  "获取成功"
-// @Router       /services/{id} [get]
-func (h *ServiceHandler) GetServiceById(c *gin.Context) {
-	idStr := c.Param("id")
-	id, err := primitive.ObjectIDFromHex(idStr)
-	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"code": 400,
-			"msg":  "无效的ID",
-		})
-		return
+func (h *ServiceHandler) GetServiceById(c *gin.Context) (ginx.Result, error) {
+	id, ok := ginx.GetId(c)
+	if !ok {
+		return ginx.Result{}, nil
 	}
 
 	service, err := h.svc.GetServiceById(c.Request.Context(), id)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"code": 500,
-			"msg":  err.Error(),
-		})
-		return
+		return ginx.Result{}, err
 	}
 	if service == nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"code": 404,
-			"msg":  "服务项目不存在",
-		})
-		return
+		return ginx.Fail(404, "服务项目不存在"), nil
 	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"code":    200,
-		"msg":     "获取成功",
-		"success": true,
-		"data":    service,
-	})
+	return ginx.Ok("获取成功", service), nil
 }
 
-// GetServiceList 获取服务项目列表
-// @Summary      获取服务项目列表
-// @Description  分页获取服务项目定义列表
-// @Tags         服务管理
-// @Accept       json
-// @Produce      json
-// @Param        category  query     string  false  "类别"
-// @Param        status    query     string  false  "状态"
-// @Param        skip      query     int     false  "跳过数量"  default(0)
-// @Param        limit     query     int     false  "每页数量"  default(20)
-// @Success      200       {object}  map[string]interface{}  "获取成功"
-// @Router       /services [get]
-func (h *ServiceHandler) GetServiceList(c *gin.Context) {
+func (h *ServiceHandler) GetServiceList(c *gin.Context) (ginx.Result, error) {
 	category := c.Query("category")
 	status := c.Query("status")
-	skipStr := c.DefaultQuery("skip", "0")
-	limitStr := c.DefaultQuery("limit", "20")
+	page := ginx.GetPage(c)
 
-	skip, _ := strconv.ParseInt(skipStr, 10, 64)
-	limit, _ := strconv.ParseInt(limitStr, 10, 64)
-
-	list, total, err := h.svc.GetServiceList(c.Request.Context(), category, status, skip, limit)
+	list, total, err := h.svc.GetServiceList(c.Request.Context(), category, status, page.Skip, page.Limit)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"code": 500,
-			"msg":  err.Error(),
-		})
-		return
+		return ginx.Result{}, err
 	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"code":    200,
-		"msg":     "获取成功",
-		"success": true,
-		"data":    list,
-		"total":   total,
-	})
+	return ginx.OkList("获取成功", list, total), nil
 }
 
-// UpdateService 更新服务项目
-// @Summary      更新服务项目
-// @Description  根据ID更新服务项目信息
-// @Tags         服务管理
-// @Accept       json
-// @Produce      json
-// @Param        id       path      string          true  "服务项目ID"
-// @Param        request  body      domain.Service  true  "服务项目信息"
-// @Success      200      {object}  map[string]interface{}  "更新成功"
-// @Router       /services/{id} [put]
-func (h *ServiceHandler) UpdateService(c *gin.Context) {
-	idStr := c.Param("id")
-	id, err := primitive.ObjectIDFromHex(idStr)
-	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"code": 400,
-			"msg":  "无效的ID",
-		})
-		return
+func (h *ServiceHandler) UpdateService(c *gin.Context, req domain.Service) (ginx.Result, error) {
+	id, ok := ginx.GetId(c)
+	if !ok {
+		return ginx.Result{}, nil
 	}
 
-	var req domain.Service
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"code": 400,
-			"msg":  "请求参数错误: " + err.Error(),
-		})
-		return
+	if err := h.svc.UpdateService(c.Request.Context(), id, &req); err != nil {
+		return ginx.Fail(400, err.Error()), nil
 	}
-
-	err = h.svc.UpdateService(c.Request.Context(), id, &req)
-	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"code": 400,
-			"msg":  err.Error(),
-		})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"code":    200,
-		"msg":     "更新成功",
-		"success": true,
-	})
+	return ginx.OkMsg("更新成功"), nil
 }
 
-// DeleteService 删除服务项目
-// @Summary      删除服务项目
-// @Description  根据ID删除服务项目定义
-// @Tags         服务管理
-// @Accept       json
-// @Produce      json
-// @Param        id   path      string  true  "服务项目ID"
-// @Success      200  {object}  map[string]interface{}  "删除成功"
-// @Router       /services/{id} [delete]
-func (h *ServiceHandler) DeleteService(c *gin.Context) {
-	idStr := c.Param("id")
-	id, err := primitive.ObjectIDFromHex(idStr)
-	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"code": 400,
-			"msg":  "无效的ID",
-		})
-		return
+func (h *ServiceHandler) DeleteService(c *gin.Context) (ginx.Result, error) {
+	id, ok := ginx.GetId(c)
+	if !ok {
+		return ginx.Result{}, nil
 	}
 
-	err = h.svc.DeleteService(c.Request.Context(), id)
-	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"code": 400,
-			"msg":  err.Error(),
-		})
-		return
+	if err := h.svc.DeleteService(c.Request.Context(), id); err != nil {
+		return ginx.Fail(400, err.Error()), nil
 	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"code":    200,
-		"msg":     "删除成功",
-		"success": true,
-	})
+	return ginx.OkMsg("删除成功"), nil
 }
 
-// PurchaseService 客户购买服务
-// @Summary      客户购买服务
-// @Description  为客户购买指定的服务项目
-// @Tags         服务管理
-// @Accept       json
-// @Produce      json
-// @Param        request  body      domain.PurchaseServiceRequest  true  "购买信息"
-// @Success      200      {object}  map[string]interface{}  "购买成功"
-// @Failure      400      {object}  map[string]interface{}  "请求参数错误"
-// @Router       /services/purchase [post]
-func (h *ServiceHandler) PurchaseService(c *gin.Context) {
-	var req domain.PurchaseServiceRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"code": 400,
-			"msg":  "请求参数错误: " + err.Error(),
-		})
-		return
-	}
-
+func (h *ServiceHandler) PurchaseService(c *gin.Context, req domain.PurchaseServiceRequest) (ginx.Result, error) {
 	customerID, err := primitive.ObjectIDFromHex(req.CustomerID)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"code": 400,
-			"msg":  "无效的客户ID",
-		})
-		return
+		return ginx.Fail(400, "无效的客户ID"), nil
 	}
-
 	serviceID, err := primitive.ObjectIDFromHex(req.ServiceID)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"code": 400,
-			"msg":  "无效的服务ID",
-		})
-		return
+		return ginx.Fail(400, "无效的服务ID"), nil
 	}
-
 	startDate, err := time.Parse("2006-01-02", req.StartDate)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"code": 400,
-			"msg":  "无效的日期格式，请使用 YYYY-MM-DD",
-		})
-		return
+		return ginx.Fail(400, "无效的日期格式，请使用 YYYY-MM-DD"), nil
 	}
-
-	err = h.svc.PurchaseService(c.Request.Context(), customerID, serviceID, startDate)
-	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"code": 400,
-			"msg":  err.Error(),
-		})
-		return
+	if err := h.svc.PurchaseService(c.Request.Context(), customerID, serviceID, startDate); err != nil {
+		return ginx.Fail(400, err.Error()), nil
 	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"code":    200,
-		"msg":     "购买成功",
-		"success": true,
-	})
+	return ginx.OkMsg("购买成功"), nil
 }
 
-// GetCustomerServices 获取客户购买的服务列表
-// @Summary      获取客户服务列表
-// @Description  获取指定客户已购买的服务列表
-// @Tags         服务管理
-// @Accept       json
-// @Produce      json
-// @Param        customer_id  path      string  true  "客户ID"
-// @Success      200          {object}  map[string]interface{}  "获取成功"
-// @Router       /services/customer/{customer_id} [get]
-func (h *ServiceHandler) GetCustomerServices(c *gin.Context) {
+func (h *ServiceHandler) GetCustomerServices(c *gin.Context) (ginx.Result, error) {
 	customerIDStr := c.Param("customer_id")
 	customerID, err := primitive.ObjectIDFromHex(customerIDStr)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"code": 400,
-			"msg":  "无效的客户ID",
-		})
-		return
+		return ginx.Fail(400, "无效的客户ID"), nil
 	}
-
 	services, err := h.svc.GetCustomerServices(c.Request.Context(), customerID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"code": 500,
-			"msg":  err.Error(),
-		})
-		return
+		return ginx.Result{}, err
 	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"code":    200,
-		"msg":     "获取成功",
-		"success": true,
-		"data":    services,
-	})
+	return ginx.Ok("获取成功", services), nil
 }
 
-// EndService 结束客户服务
-// @Summary      结束客户服务
-// @Description  根据购买记录ID手动结束一项服务
-// @Tags         服务管理
-// @Accept       json
-// @Produce      json
-// @Param        id       path      string  true  "购买记录ID"
-// @Param        request  body      domain.EndServiceRequest  true  "结束信息"
-// @Success      200      {object}  map[string]interface{}  "结束成功"
-// @Router       /services/customer-service/{id}/end [put]
-func (h *ServiceHandler) EndService(c *gin.Context) {
-	idStr := c.Param("id")
-	id, err := primitive.ObjectIDFromHex(idStr)
-	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"code": 400,
-			"msg":  "无效的ID",
-		})
-		return
-	}
-
-	var req domain.EndServiceRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"code": 400,
-			"msg":  "请求参数错误: " + err.Error(),
-		})
-		return
+func (h *ServiceHandler) EndService(c *gin.Context, req domain.EndServiceRequest) (ginx.Result, error) {
+	id, ok := ginx.GetId(c)
+	if !ok {
+		return ginx.Result{}, nil
 	}
 
 	endDate, err := time.Parse("2006-01-02", req.EndDate)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"code": 400,
-			"msg":  "无效的日期格式，请使用 YYYY-MM-DD",
-		})
-		return
+		return ginx.Fail(400, "无效的日期格式，请使用 YYYY-MM-DD"), nil
 	}
-
-	err = h.svc.EndService(c.Request.Context(), id, endDate)
-	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"code": 400,
-			"msg":  err.Error(),
-		})
-		return
+	if err := h.svc.EndService(c.Request.Context(), id, endDate); err != nil {
+		return ginx.Fail(400, err.Error()), nil
 	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"code":    200,
-		"msg":     "结束成功",
-		"success": true,
-	})
+	return ginx.OkMsg("结束成功"), nil
 }
 
-// UpdateCustomerServiceEndDate 修改客户服务结束时间
-// @Summary      修改客户服务结束时间
-// @Description  根据购买记录ID修改服务的结束时间（不改变状态）
-// @Tags         服务管理
-// @Accept       json
-// @Produce      json
-// @Param        id       path      string  true  "购买记录ID"
-// @Param        request  body      domain.EndServiceRequest  true  "结束时间信息"
-// @Success      200      {object}  map[string]interface{}  "修改成功"
-// @Router       /services/customer_service/{id}/end_date [put]
-func (h *ServiceHandler) UpdateCustomerServiceEndDate(c *gin.Context) {
-	idStr := c.Param("id")
-	id, err := primitive.ObjectIDFromHex(idStr)
-	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"code": 400,
-			"msg":  "无效的ID",
-		})
-		return
-	}
-
-	var req domain.EndServiceRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"code": 400,
-			"msg":  "请求参数错误: " + err.Error(),
-		})
-		return
+func (h *ServiceHandler) UpdateCustomerServiceEndDate(c *gin.Context, req domain.EndServiceRequest) (ginx.Result, error) {
+	id, ok := ginx.GetId(c)
+	if !ok {
+		return ginx.Result{}, nil
 	}
 
 	endDate, err := time.Parse("2006-01-02", req.EndDate)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"code": 400,
-			"msg":  "无效的日期格式，请使用 YYYY-MM-DD",
-		})
-		return
+		return ginx.Fail(400, "无效的日期格式，请使用 YYYY-MM-DD"), nil
 	}
-
-	err = h.svc.UpdateCustomerServiceEndDate(c.Request.Context(), id, endDate)
-	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"code": 400,
-			"msg":  err.Error(),
-		})
-		return
+	if err := h.svc.UpdateCustomerServiceEndDate(c.Request.Context(), id, endDate); err != nil {
+		return ginx.Fail(400, err.Error()), nil
 	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"code":    200,
-		"msg":     "修改成功",
-		"success": true,
-	})
+	return ginx.OkMsg("修改成功"), nil
 }
 
-// CancelCustomerService 取消客户单一服务
-// @Summary      取消客户单一服务
-// @Description  根据购买记录ID取消一项服务（将状态设置为已取消）
-// @Tags         服务管理
-// @Accept       json
-// @Produce      json
-// @Param        id   path      string  true  "购买记录ID"
-// @Success      200  {object}  map[string]interface{}  "取消成功"
-// @Router       /services/customer_service/{id}/cancel [put]
-func (h *ServiceHandler) CancelCustomerService(c *gin.Context) {
-	idStr := c.Param("id")
-	id, err := primitive.ObjectIDFromHex(idStr)
-	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"code": 400,
-			"msg":  "无效的ID",
-		})
-		return
+func (h *ServiceHandler) CancelCustomerService(c *gin.Context) (ginx.Result, error) {
+	id, ok := ginx.GetId(c)
+	if !ok {
+		return ginx.Result{}, nil
 	}
 
-	err = h.svc.CancelCustomerService(c.Request.Context(), id)
-	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"code": 400,
-			"msg":  err.Error(),
-		})
-		return
+	if err := h.svc.CancelCustomerService(c.Request.Context(), id); err != nil {
+		return ginx.Fail(400, err.Error()), nil
 	}
+	return ginx.OkMsg("取消成功"), nil
+}
 
-	c.JSON(http.StatusOK, gin.H{
-		"code":    200,
-		"msg":     "取消成功",
-		"success": true,
-	})
+func (h *ServiceHandler) GetCustomerServiceList(c *gin.Context) (ginx.Result, error) {
+	customerIDStr := c.Query("customer_id")
+	serviceIDStr := c.Query("service_id")
+	status := c.Query("status")
+	page := ginx.GetPage(c)
+
+	customerID, _ := primitive.ObjectIDFromHex(customerIDStr)
+	serviceID, _ := primitive.ObjectIDFromHex(serviceIDStr)
+
+	list, total, err := h.svc.GetCustomerServiceList(c.Request.Context(), customerID, serviceID, status, page.Skip, page.Limit)
+	if err != nil {
+		return ginx.Result{}, err
+	}
+	return ginx.OkList("获取成功", list, total), nil
+}
+
+func (h *ServiceHandler) GetCustomerService(c *gin.Context) (ginx.Result, error) {
+	customerIDStr := c.Query("customer_id")
+	serviceName := c.Query("service_name")
+	status := c.Query("status")
+	page := ginx.GetPage(c)
+
+	customerID, _ := primitive.ObjectIDFromHex(customerIDStr)
+
+	list, total, err := h.svc.GetCustomerServiceByGroup(c.Request.Context(), customerID, serviceName, status, page.Skip, page.Limit)
+	if err != nil {
+		return ginx.Result{}, err
+	}
+	return ginx.OkList("获取成功", list, total), nil
 }
