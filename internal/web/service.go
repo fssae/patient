@@ -33,6 +33,8 @@ func (h *ServiceHandler) RegisterRoutes(server gin.IRouter) {
 	group.POST("/purchase", h.PurchaseService)
 	group.GET("/customer/:customer_id", h.GetCustomerServices)
 	group.PUT("/customer_service/:id/end", h.EndService)
+	group.PUT("/customer_service/:id/end_date", h.UpdateCustomerServiceEndDate)
+	group.PUT("/customer_service/:id/cancel", h.CancelCustomerService)
 	//获取客户服务列表，去重
 	group.GET("/customer-services_by_group", h.GetCustomerService)
 }
@@ -470,6 +472,97 @@ func (h *ServiceHandler) EndService(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"code":    200,
 		"msg":     "结束成功",
+		"success": true,
+	})
+}
+
+// UpdateCustomerServiceEndDate 修改客户服务结束时间
+// @Summary      修改客户服务结束时间
+// @Description  根据购买记录ID修改服务的结束时间（不改变状态）
+// @Tags         服务管理
+// @Accept       json
+// @Produce      json
+// @Param        id       path      string  true  "购买记录ID"
+// @Param        request  body      domain.EndServiceRequest  true  "结束时间信息"
+// @Success      200      {object}  map[string]interface{}  "修改成功"
+// @Router       /services/customer_service/{id}/end_date [put]
+func (h *ServiceHandler) UpdateCustomerServiceEndDate(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := primitive.ObjectIDFromHex(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code": 400,
+			"msg":  "无效的ID",
+		})
+		return
+	}
+
+	var req domain.EndServiceRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code": 400,
+			"msg":  "请求参数错误: " + err.Error(),
+		})
+		return
+	}
+
+	endDate, err := time.Parse("2006-01-02", req.EndDate)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code": 400,
+			"msg":  "无效的日期格式，请使用 YYYY-MM-DD",
+		})
+		return
+	}
+
+	err = h.svc.UpdateCustomerServiceEndDate(c.Request.Context(), id, endDate)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code": 400,
+			"msg":  err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":    200,
+		"msg":     "修改成功",
+		"success": true,
+	})
+}
+
+// CancelCustomerService 取消客户单一服务
+// @Summary      取消客户单一服务
+// @Description  根据购买记录ID取消一项服务（将状态设置为已取消）
+// @Tags         服务管理
+// @Accept       json
+// @Produce      json
+// @Param        id   path      string  true  "购买记录ID"
+// @Success      200  {object}  map[string]interface{}  "取消成功"
+// @Router       /services/customer_service/{id}/cancel [put]
+func (h *ServiceHandler) CancelCustomerService(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := primitive.ObjectIDFromHex(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code": 400,
+			"msg":  "无效的ID",
+		})
+		return
+	}
+
+	err = h.svc.CancelCustomerService(c.Request.Context(), id)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code": 400,
+			"msg":  err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":    200,
+		"msg":     "取消成功",
 		"success": true,
 	})
 }

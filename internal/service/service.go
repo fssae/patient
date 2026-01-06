@@ -382,3 +382,35 @@ func (s *ServerService) EndService(ctx context.Context, customerServiceID primit
 
 	return s.customerServiceRepo.Update(ctx, cs)
 }
+
+// UpdateCustomerServiceEndDate 修改客户服务结束时间（不改变状态）
+func (s *ServerService) UpdateCustomerServiceEndDate(ctx context.Context, customerServiceID primitive.ObjectID, endDate time.Time) error {
+	cs, err := s.customerServiceRepo.FindById(ctx, customerServiceID)
+	if err != nil {
+		return err
+	}
+	if cs == nil {
+		return errors.New("客户服务记录不存在")
+	}
+
+	cs.EndDate = endDate
+	cs.UpdatedAt = time.Now()
+
+	return s.customerServiceRepo.Update(ctx, cs)
+}
+
+// CancelCustomerService 取消客户单一服务
+func (s *ServerService) CancelCustomerService(ctx context.Context, customerServiceID primitive.ObjectID) error {
+	cs, err := s.customerServiceRepo.FindById(ctx, customerServiceID)
+	if err != nil {
+		return err
+	}
+	if cs == nil {
+		return errors.New("客户服务记录不存在")
+	}
+
+	cs.Status = "已取消"
+	cs.UpdatedAt = time.Now()
+
+	return s.customerServiceRepo.Update(ctx, cs)
+}

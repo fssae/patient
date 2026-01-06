@@ -456,6 +456,9 @@ definitions:
         type: string
       description:
         type: string
+      duration:
+        description: TODO
+        type: integer
       id:
         type: string
       name:
@@ -2473,6 +2476,56 @@ paths:
             additionalProperties: true
             type: object
       summary: 获取客户服务列表
+      tags:
+      - 服务管理
+  /services/customer_service/{id}/cancel:
+    put:
+      consumes:
+      - application/json
+      description: 根据购买记录ID取消一项服务（将状态设置为已取消）
+      parameters:
+      - description: 购买记录ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 取消成功
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 取消客户单一服务
+      tags:
+      - 服务管理
+  /services/customer_service/{id}/end_date:
+    put:
+      consumes:
+      - application/json
+      description: 根据购买记录ID修改服务的结束时间（不改变状态）
+      parameters:
+      - description: 购买记录ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 结束时间信息
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.EndServiceRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 修改成功
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 修改客户服务结束时间
       tags:
       - 服务管理
   /services/purchase:
