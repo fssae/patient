@@ -38,10 +38,9 @@ func NewServiceService(
 	}
 }
 
-// GetCustomerServiceByGroup 按用户分组获取服务列表（包含用户名称和服务名称）
-// 分页基于用户数量，skip=1 表示跳过1个用户，limit=10 表示返回10个用户的服务组
-// TODO
-func (s *ServerService) GetCustomerServiceByGroup(ctx context.Context, status string, skip, limit int64) ([]*domain.CustomerServiceGroup, int64, error) {
+// GetCustomerServiceByGroup 获取客户服务列表（包含用户名称和服务名称）
+// 分页基于用户数量，skip=1 表示跳过1个用户，limit=10 表示返回10个用户的所有服务记录
+func (s *ServerService) GetCustomerServiceByGroup(ctx context.Context, status string, skip, limit int64) ([]*domain.CustomerServiceResponse, int64, error) {
 	filter := bson.M{}
 	if status != "" {
 		filter["status"] = status
@@ -56,7 +55,7 @@ func (s *ServerService) GetCustomerServiceByGroup(ctx context.Context, status st
 	// 用户总数
 	totalCustomers := int64(len(allCustomerIDs))
 	if totalCustomers == 0 {
-		return []*domain.CustomerServiceGroup{}, 0, nil
+		return []*domain.CustomerServiceResponse{}, 0, nil
 	}
 
 	// 对用户ID列表进行分页
@@ -65,7 +64,7 @@ func (s *ServerService) GetCustomerServiceByGroup(ctx context.Context, status st
 		startIdx = 0
 	}
 	if startIdx >= totalCustomers {
-		return []*domain.CustomerServiceGroup{}, totalCustomers, nil
+		return []*domain.CustomerServiceResponse{}, totalCustomers, nil
 	}
 
 	endIdx := startIdx + limit
@@ -76,7 +75,7 @@ func (s *ServerService) GetCustomerServiceByGroup(ctx context.Context, status st
 	// 获取当前页的用户ID
 	pagedCustomerIDs := allCustomerIDs[startIdx:endIdx]
 
-	// 查询这些用户的所有服务记录（不分页，获取每个用户的全部服务）
+	// 查询这些用户的所有服务记录
 	customerIDFilter := bson.M{"customer_id": bson.M{"$in": pagedCustomerIDs}}
 	if status != "" {
 		customerIDFilter["status"] = status
@@ -92,16 +91,24 @@ func (s *ServerService) GetCustomerServiceByGroup(ctx context.Context, status st
 		serviceIDs[cs.ServiceID] = true
 	}
 
-	// 批量查询客户信息（获取客户名称）
+	// 批量查询客户信息（包含完整信息以获取 BedID 和 CareLevelID）
 	customerMap := make(map[primitive.ObjectID]*domain.Customer)
+	bedIDs := make(map[primitive.ObjectID]bool)
+	careLevelIDs := make(map[primitive.ObjectID]bool)
 	for _, id := range pagedCustomerIDs {
 		customer, err := s.customerRepo.FindById(ctx, id)
 		if err == nil && customer != nil {
 			customerMap[id] = customer
+			if !customer.BedID.IsZero() {
+				bedIDs[customer.BedID] = true
+			}
+			if !customer.CareLevelID.IsZero() {
+				careLevelIDs[customer.CareLevelID] = true
+			}
 		}
 	}
 
-	// 批量查询服务信息（获取服务名称）
+	// 批量查询服务信息
 	serviceMap := make(map[primitive.ObjectID]*domain.Service)
 	for id := range serviceIDs {
 		service, err := s.serviceRepo.FindById(ctx, id)
@@ -110,48 +117,61 @@ func (s *ServerService) GetCustomerServiceByGroup(ctx context.Context, status st
 		}
 	}
 
-	// 按用户ID分组组装数据
-	groupMap := make(map[primitive.ObjectID]*domain.CustomerServiceGroup)
+	// 批量查询床位信息
+	bedMap := make(map[primitive.ObjectID]*domain.Bed)
+	for id := range bedIDs {
+		bed, err := s.bedRepo.FindById(ctx, id)
+		if err == nil && bed != nil {
+			bedMap[id] = bed
+		}
+	}
+
+	// 批量查询护理级别信息
+	careLevelMap := make(map[primitive.ObjectID]*domain.CareLevel)
+	for id := range careLevelIDs {
+		careLevel, err := s.careLevelRepo.FindById(ctx, id)
+		if err == nil && careLevel != nil {
+			careLevelMap[id] = careLevel
+		}
+	}
+
+	// 组装响应数据
+	result := make([]*domain.CustomerServiceResponse, 0, len(list))
 	for _, cs := range list {
-		group, exists := groupMap[cs.CustomerID]
-		if !exists {
-			customerName := ""
-			if customer, ok := customerMap[cs.CustomerID]; ok {
-				customerName = customer.Name
-			}
-			group = &domain.CustomerServiceGroup{
-				CustomerID:   cs.CustomerID,
-				CustomerName: customerName,
-				Services:     make([]*domain.CustomerServiceItem, 0),
-			}
-			groupMap[cs.CustomerID] = group
-		}
-
-		// 获取服务名称
-		serviceName := cs.ServiceName
-		if svc, ok := serviceMap[cs.ServiceID]; ok {
-			serviceName = svc.Name
-		}
-
-		item := &domain.CustomerServiceItem{
+		resp := &domain.CustomerServiceResponse{
 			ID:          cs.ID,
+			CustomerID:  cs.CustomerID,
 			ServiceID:   cs.ServiceID,
-			ServiceName: serviceName,
+			ServiceName: cs.ServiceName,
 			StartDate:   cs.StartDate,
 			EndDate:     cs.EndDate,
 			Status:      cs.Status,
 			CreatedAt:   cs.CreatedAt,
 			UpdatedAt:   cs.UpdatedAt,
 		}
-		group.Services = append(group.Services, item)
-	}
 
-	// 转换为切片返回（保持顺序与分页顺序一致）
-	result := make([]*domain.CustomerServiceGroup, 0, len(pagedCustomerIDs))
-	for _, customerID := range pagedCustomerIDs {
-		if group, ok := groupMap[customerID]; ok {
-			result = append(result, group)
+		// 填充客户相关信息（姓名、床位号、护理级别）
+		if customer, ok := customerMap[cs.CustomerID]; ok {
+			resp.CustomerName = customer.Name
+			// 填充床位号
+			if bed, bedOk := bedMap[customer.BedID]; bedOk {
+				resp.BedNumber = bed.Number
+			}
+			// 填充护理级别
+			if careLevel, clOk := careLevelMap[customer.CareLevelID]; clOk {
+				resp.CareLevelstr = careLevel.Name
+			}
 		}
+
+		// 填充服务详情
+		if svc, ok := serviceMap[cs.ServiceID]; ok {
+			resp.ServiceName = svc.Name
+			resp.ServiceDesc = svc.Description
+			resp.Category = svc.Category
+			resp.Price = svc.Price
+			resp.Unit = svc.Unit
+		}
+		result = append(result, resp)
 	}
 
 	return result, totalCustomers, nil
