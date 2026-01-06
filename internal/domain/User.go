@@ -279,6 +279,8 @@ type Service struct {
 	Status      string             `json:"status" bson:"status"`     // 状态："启用"/"停用"
 	CreatedAt   time.Time          `json:"created_at" bson:"created_at"`
 	UpdatedAt   time.Time          `json:"updated_at" bson:"updated_at"`
+	//TODO
+	Duration int `json:"duration" bson:"duration"`
 }
 
 // CustomerService 客户购买的服务

@@ -39,29 +39,62 @@ func NewServiceService(
 }
 
 // GetCustomerServiceByGroup 按用户分组获取服务列表（包含用户名称和服务名称）
+// 分页基于用户数量，skip=1 表示跳过1个用户，limit=10 表示返回10个用户的服务组
+// TODO
 func (s *ServerService) GetCustomerServiceByGroup(ctx context.Context, status string, skip, limit int64) ([]*domain.CustomerServiceGroup, int64, error) {
 	filter := bson.M{}
 	if status != "" {
 		filter["status"] = status
 	}
 
-	// 查询所有客户服务记录
-	list, total, err := s.customerServiceRepo.FindList(ctx, filter, skip, limit)
+	// 先获取所有符合条件的唯一用户ID列表（用于分页）
+	allCustomerIDs, err := s.customerServiceRepo.FindDistinctCustomerIDs(ctx, filter)
 	if err != nil {
 		return nil, 0, err
 	}
 
-	// 收集所有需要查询的 CustomerID 和 ServiceID
-	customerIDs := make(map[primitive.ObjectID]bool)
+	// 用户总数
+	totalCustomers := int64(len(allCustomerIDs))
+	if totalCustomers == 0 {
+		return []*domain.CustomerServiceGroup{}, 0, nil
+	}
+
+	// 对用户ID列表进行分页
+	startIdx := skip
+	if startIdx < 0 {
+		startIdx = 0
+	}
+	if startIdx >= totalCustomers {
+		return []*domain.CustomerServiceGroup{}, totalCustomers, nil
+	}
+
+	endIdx := startIdx + limit
+	if limit <= 0 || endIdx > totalCustomers {
+		endIdx = totalCustomers
+	}
+
+	// 获取当前页的用户ID
+	pagedCustomerIDs := allCustomerIDs[startIdx:endIdx]
+
+	// 查询这些用户的所有服务记录（不分页，获取每个用户的全部服务）
+	customerIDFilter := bson.M{"customer_id": bson.M{"$in": pagedCustomerIDs}}
+	if status != "" {
+		customerIDFilter["status"] = status
+	}
+	list, _, err := s.customerServiceRepo.FindList(ctx, customerIDFilter, 0, 0)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// 收集所有需要查询的 ServiceID
 	serviceIDs := make(map[primitive.ObjectID]bool)
 	for _, cs := range list {
-		customerIDs[cs.CustomerID] = true
 		serviceIDs[cs.ServiceID] = true
 	}
 
 	// 批量查询客户信息（获取客户名称）
 	customerMap := make(map[primitive.ObjectID]*domain.Customer)
-	for id := range customerIDs {
+	for _, id := range pagedCustomerIDs {
 		customer, err := s.customerRepo.FindById(ctx, id)
 		if err == nil && customer != nil {
 			customerMap[id] = customer
@@ -113,13 +146,15 @@ func (s *ServerService) GetCustomerServiceByGroup(ctx context.Context, status st
 		group.Services = append(group.Services, item)
 	}
 
-	// 转换为切片返回
-	result := make([]*domain.CustomerServiceGroup, 0, len(groupMap))
-	for _, group := range groupMap {
-		result = append(result, group)
+	// 转换为切片返回（保持顺序与分页顺序一致）
+	result := make([]*domain.CustomerServiceGroup, 0, len(pagedCustomerIDs))
+	for _, customerID := range pagedCustomerIDs {
+		if group, ok := groupMap[customerID]; ok {
+			result = append(result, group)
+		}
 	}
 
-	return result, total, nil
+	return result, totalCustomers, nil
 }
 
 // CreateService 创建服务项目

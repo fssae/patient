@@ -14,6 +14,7 @@ type CustomerServiceRepository interface {
 	FindById(ctx context.Context, id primitive.ObjectID) (*domain.CustomerService, error)
 	FindByCustomerID(ctx context.Context, customerID primitive.ObjectID) ([]*domain.CustomerService, error)
 	FindList(ctx context.Context, filter bson.M, skip, limit int64) ([]*domain.CustomerService, int64, error)
+	FindDistinctCustomerIDs(ctx context.Context, filter bson.M) ([]primitive.ObjectID, error)
 	Update(ctx context.Context, cs *domain.CustomerService) error
 }
 
@@ -43,7 +44,10 @@ func (r *customerServiceRepository) FindList(ctx context.Context, filter bson.M,
 	return r.dao.FindList(ctx, filter, skip, limit)
 }
 
+func (r *customerServiceRepository) FindDistinctCustomerIDs(ctx context.Context, filter bson.M) ([]primitive.ObjectID, error) {
+	return r.dao.FindDistinctCustomerIDs(ctx, filter)
+}
+
 func (r *customerServiceRepository) Update(ctx context.Context, cs *domain.CustomerService) error {
 	return r.dao.Update(ctx, cs)
 }
-
