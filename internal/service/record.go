@@ -584,8 +584,9 @@ func (s *RecordService) GetOutgoingList(ctx context.Context, name, startDate, en
 	// 状态筛选 已外出没有endDate,已返回有endDate
 	if status != "" {
 		switch status {
+		//都是外出记录，只是已返回有endDate
 		case "已返回":
-			filter["type"] = "入住" // 直接匹配
+			filter["type"] = "外出" // 直接匹配
 			if endDate != "" {
 				if t, err := time.Parse("2006-01-02", endDate); err == nil {
 					filter["end_time"] = bson.M{"$lte": t}
