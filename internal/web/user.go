@@ -38,7 +38,7 @@ func (h *UserHandler) RegisterRoutes(server gin.IRouter) {
 func (h *UserHandler) Register(c *gin.Context) {
 	var req domain.UserRegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  "请求参数错误: " + err.Error(),
 		})
@@ -47,7 +47,7 @@ func (h *UserHandler) Register(c *gin.Context) {
 
 	err := h.svc.Register(c.Request.Context(), &req)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  err.Error(),
 		})
@@ -75,7 +75,7 @@ func (h *UserHandler) Register(c *gin.Context) {
 func (h *UserHandler) Login(c *gin.Context) {
 	var req domain.UserLoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  "请求参数错误: " + err.Error(),
 		})

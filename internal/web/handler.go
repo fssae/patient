@@ -50,7 +50,7 @@ func (h *PatientHandler) RegisterRoutes(server *gin.Engine) {
 func (h *PatientHandler) Login(c *gin.Context) {
 	var req domain.PatientLoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  "请求参数错误",
 		})
@@ -88,7 +88,7 @@ func (h *PatientHandler) Login(c *gin.Context) {
 func (h *PatientHandler) Register(c *gin.Context) {
 	var req domain.PatientRegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  "请求参数错误",
 		})

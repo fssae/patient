@@ -43,7 +43,7 @@ func (h *CareRecordHandler) RegisterRoutes(server gin.IRouter) {
 func (h *CareRecordHandler) Create(c *gin.Context) {
 	var req domain.CareRecords
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  "请求参数错误: " + err.Error(),
 		})
@@ -79,7 +79,7 @@ func (h *CareRecordHandler) GetById(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := primitive.ObjectIDFromHex(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  "无效的ID",
 		})
@@ -161,7 +161,7 @@ func (h *CareRecordHandler) Update(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := primitive.ObjectIDFromHex(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  "无效的ID",
 		})
@@ -171,7 +171,7 @@ func (h *CareRecordHandler) Update(c *gin.Context) {
 	// 使用 util.Validate 进行部分更新字段绑定（参考 CustomerHandler）
 	updates, err := util.Validate(domain.CareRecords{}, c)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  err.Error(),
 		})
@@ -207,7 +207,7 @@ func (h *CareRecordHandler) Delete(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := primitive.ObjectIDFromHex(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  "无效的ID",
 		})
@@ -244,7 +244,7 @@ func (h *CareRecordHandler) AddRecord(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := primitive.ObjectIDFromHex(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  "无效的ID",
 		})
@@ -253,7 +253,7 @@ func (h *CareRecordHandler) AddRecord(c *gin.Context) {
 
 	var req domain.RecordItems
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  "请求参数错误: " + err.Error(),
 		})

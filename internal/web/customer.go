@@ -66,7 +66,7 @@ func (h *CustomerHandler) GetListNameAndID(c *gin.Context) {
 func (h *CustomerHandler) Create(c *gin.Context) {
 	var req domain.Customer
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  "请求参数错误: " + err.Error(),
 		})
@@ -75,7 +75,7 @@ func (h *CustomerHandler) Create(c *gin.Context) {
 
 	err := h.svc.Create(c.Request.Context(), &req)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  err.Error(),
 		})
@@ -103,7 +103,7 @@ func (h *CustomerHandler) GetById(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := primitive.ObjectIDFromHex(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  "无效的ID",
 		})
@@ -156,7 +156,7 @@ func (h *CustomerHandler) GetById(c *gin.Context) {
 func (h *CustomerHandler) GetList(c *gin.Context) {
 	var req domain.CustomerQuery
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  "请求参数错误: " + err.Error(),
 		})
@@ -201,7 +201,7 @@ func (h *CustomerHandler) Update(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := primitive.ObjectIDFromHex(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  "无效的ID",
 		})
@@ -211,7 +211,7 @@ func (h *CustomerHandler) Update(c *gin.Context) {
 	//根据结构体获取业务字段,并进行绑定和验证
 	req, err := util.Validate(&domain.Customer{}, c)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  err.Error(),
 		})
@@ -219,7 +219,7 @@ func (h *CustomerHandler) Update(c *gin.Context) {
 	}
 	err = h.svc.Update(c.Request.Context(), id, req)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  err.Error(),
 		})
@@ -247,7 +247,7 @@ func (h *CustomerHandler) SetHealthManager(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := primitive.ObjectIDFromHex(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  "无效的客户ID",
 		})
@@ -256,7 +256,7 @@ func (h *CustomerHandler) SetHealthManager(c *gin.Context) {
 
 	var req domain.SetHealthManagerRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  "请求参数错误: " + err.Error(),
 		})
@@ -265,7 +265,7 @@ func (h *CustomerHandler) SetHealthManager(c *gin.Context) {
 
 	managerID, err := primitive.ObjectIDFromHex(req.ManagerID)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  "无效的健康管家ID",
 		})
@@ -274,7 +274,7 @@ func (h *CustomerHandler) SetHealthManager(c *gin.Context) {
 
 	err = h.svc.SetHealthManager(c.Request.Context(), id, managerID, req.ManagerName)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  err.Error(),
 		})
@@ -302,7 +302,7 @@ func (h *CustomerHandler) SetBed(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := primitive.ObjectIDFromHex(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  "无效的客户ID",
 		})
@@ -311,7 +311,7 @@ func (h *CustomerHandler) SetBed(c *gin.Context) {
 
 	var req domain.SetBedRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  "请求参数错误: " + err.Error(),
 		})
@@ -320,7 +320,7 @@ func (h *CustomerHandler) SetBed(c *gin.Context) {
 
 	bedID, err := primitive.ObjectIDFromHex(req.BedID)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  "无效的床位ID",
 		})
@@ -329,7 +329,7 @@ func (h *CustomerHandler) SetBed(c *gin.Context) {
 
 	err = h.svc.SetBed(c.Request.Context(), id, bedID)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  err.Error(),
 		})
@@ -357,7 +357,7 @@ func (h *CustomerHandler) SetDietPlan(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := primitive.ObjectIDFromHex(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  "无效的客户ID",
 		})
@@ -366,7 +366,7 @@ func (h *CustomerHandler) SetDietPlan(c *gin.Context) {
 
 	var req domain.SetDietPlanRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  "请求参数错误: " + err.Error(),
 		})
@@ -375,7 +375,7 @@ func (h *CustomerHandler) SetDietPlan(c *gin.Context) {
 
 	dietPlanID, err := primitive.ObjectIDFromHex(req.DietPlanID)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  "无效的膳食计划ID",
 		})
@@ -384,7 +384,7 @@ func (h *CustomerHandler) SetDietPlan(c *gin.Context) {
 
 	err = h.svc.SetDietPlan(c.Request.Context(), id, dietPlanID)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  err.Error(),
 		})
@@ -412,7 +412,7 @@ func (h *CustomerHandler) SetCareLevel(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := primitive.ObjectIDFromHex(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  "无效的客户ID",
 		})
@@ -421,7 +421,7 @@ func (h *CustomerHandler) SetCareLevel(c *gin.Context) {
 
 	var req domain.SetCareLevelRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  "请求参数错误: " + err.Error(),
 		})
@@ -430,7 +430,7 @@ func (h *CustomerHandler) SetCareLevel(c *gin.Context) {
 
 	careLevelID, err := primitive.ObjectIDFromHex(req.CareLevelID)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  "无效的护理级别ID",
 		})
@@ -439,7 +439,7 @@ func (h *CustomerHandler) SetCareLevel(c *gin.Context) {
 
 	err = h.svc.SetCareLevel(c.Request.Context(), id, careLevelID)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  err.Error(),
 		})
@@ -466,7 +466,7 @@ func (h *CustomerHandler) Delete(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := primitive.ObjectIDFromHex(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  "无效的ID",
 		})
@@ -475,7 +475,7 @@ func (h *CustomerHandler) Delete(c *gin.Context) {
 
 	err = h.svc.Delete(c.Request.Context(), id)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  err.Error(),
 		})

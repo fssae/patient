@@ -133,7 +133,7 @@ func (h *ServiceHandler) GetCustomerServiceList(c *gin.Context) {
 func (h *ServiceHandler) CreateService(c *gin.Context) {
 	var req domain.Service
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  "请求参数错误: " + err.Error(),
 		})
@@ -142,7 +142,7 @@ func (h *ServiceHandler) CreateService(c *gin.Context) {
 
 	err := h.svc.CreateService(c.Request.Context(), &req)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  err.Error(),
 		})
@@ -169,7 +169,7 @@ func (h *ServiceHandler) GetServiceById(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := primitive.ObjectIDFromHex(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  "无效的ID",
 		})
@@ -253,7 +253,7 @@ func (h *ServiceHandler) UpdateService(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := primitive.ObjectIDFromHex(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  "无效的ID",
 		})
@@ -262,7 +262,7 @@ func (h *ServiceHandler) UpdateService(c *gin.Context) {
 
 	var req domain.Service
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  "请求参数错误: " + err.Error(),
 		})
@@ -271,7 +271,7 @@ func (h *ServiceHandler) UpdateService(c *gin.Context) {
 
 	err = h.svc.UpdateService(c.Request.Context(), id, &req)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  err.Error(),
 		})
@@ -298,7 +298,7 @@ func (h *ServiceHandler) DeleteService(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := primitive.ObjectIDFromHex(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  "无效的ID",
 		})
@@ -307,7 +307,7 @@ func (h *ServiceHandler) DeleteService(c *gin.Context) {
 
 	err = h.svc.DeleteService(c.Request.Context(), id)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  err.Error(),
 		})
@@ -334,7 +334,7 @@ func (h *ServiceHandler) DeleteService(c *gin.Context) {
 func (h *ServiceHandler) PurchaseService(c *gin.Context) {
 	var req domain.PurchaseServiceRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  "请求参数错误: " + err.Error(),
 		})
@@ -343,7 +343,7 @@ func (h *ServiceHandler) PurchaseService(c *gin.Context) {
 
 	customerID, err := primitive.ObjectIDFromHex(req.CustomerID)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  "无效的客户ID",
 		})
@@ -352,7 +352,7 @@ func (h *ServiceHandler) PurchaseService(c *gin.Context) {
 
 	serviceID, err := primitive.ObjectIDFromHex(req.ServiceID)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  "无效的服务ID",
 		})
@@ -361,7 +361,7 @@ func (h *ServiceHandler) PurchaseService(c *gin.Context) {
 
 	startDate, err := time.Parse("2006-01-02", req.StartDate)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  "无效的日期格式，请使用 YYYY-MM-DD",
 		})
@@ -370,7 +370,7 @@ func (h *ServiceHandler) PurchaseService(c *gin.Context) {
 
 	err = h.svc.PurchaseService(c.Request.Context(), customerID, serviceID, startDate)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  err.Error(),
 		})
@@ -397,7 +397,7 @@ func (h *ServiceHandler) GetCustomerServices(c *gin.Context) {
 	customerIDStr := c.Param("customer_id")
 	customerID, err := primitive.ObjectIDFromHex(customerIDStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  "无效的客户ID",
 		})
@@ -435,7 +435,7 @@ func (h *ServiceHandler) EndService(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := primitive.ObjectIDFromHex(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  "无效的ID",
 		})
@@ -444,7 +444,7 @@ func (h *ServiceHandler) EndService(c *gin.Context) {
 
 	var req domain.EndServiceRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  "请求参数错误: " + err.Error(),
 		})
@@ -453,7 +453,7 @@ func (h *ServiceHandler) EndService(c *gin.Context) {
 
 	endDate, err := time.Parse("2006-01-02", req.EndDate)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  "无效的日期格式，请使用 YYYY-MM-DD",
 		})
@@ -462,7 +462,7 @@ func (h *ServiceHandler) EndService(c *gin.Context) {
 
 	err = h.svc.EndService(c.Request.Context(), id, endDate)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  err.Error(),
 		})
@@ -490,7 +490,7 @@ func (h *ServiceHandler) UpdateCustomerServiceEndDate(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := primitive.ObjectIDFromHex(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  "无效的ID",
 		})
@@ -499,7 +499,7 @@ func (h *ServiceHandler) UpdateCustomerServiceEndDate(c *gin.Context) {
 
 	var req domain.EndServiceRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  "请求参数错误: " + err.Error(),
 		})
@@ -508,7 +508,7 @@ func (h *ServiceHandler) UpdateCustomerServiceEndDate(c *gin.Context) {
 
 	endDate, err := time.Parse("2006-01-02", req.EndDate)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  "无效的日期格式，请使用 YYYY-MM-DD",
 		})
@@ -517,7 +517,7 @@ func (h *ServiceHandler) UpdateCustomerServiceEndDate(c *gin.Context) {
 
 	err = h.svc.UpdateCustomerServiceEndDate(c.Request.Context(), id, endDate)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  err.Error(),
 		})
@@ -544,7 +544,7 @@ func (h *ServiceHandler) CancelCustomerService(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := primitive.ObjectIDFromHex(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  "无效的ID",
 		})
@@ -553,7 +553,7 @@ func (h *ServiceHandler) CancelCustomerService(c *gin.Context) {
 
 	err = h.svc.CancelCustomerService(c.Request.Context(), id)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  err.Error(),
 		})
