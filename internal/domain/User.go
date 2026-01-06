@@ -380,7 +380,7 @@ type OutgoingRequest struct {
 	EmergencyContact   string `json:"emergencycontact" binding:"required"`
 	Escort             string `json:"escort" binding:"required"`
 	ExpectedReturnTime string `json:"expectedreturntime" binding:"required"`
-	OutTime            string `json:"outTime" binding:"required"`
+	OutTime            string `json:"outTime"`
 	Remark             string `json:"remark"`
 }
 
