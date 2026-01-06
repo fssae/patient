@@ -402,7 +402,7 @@ func (h *RecordHandler) GetOutgoingList(c *gin.Context) {
 	skip, _ := strconv.ParseInt(skipStr, 10, 64)
 	limit, _ := strconv.ParseInt(limitStr, 10, 64)
 
-	list, err := h.svc.GetOutgoingList(c.Request.Context(), name, startDate, endDate, status, skip, limit)
+	list, total, err := h.svc.GetOutgoingList(c.Request.Context(), name, startDate, endDate, status, skip, limit)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code": 500,
@@ -416,6 +416,7 @@ func (h *RecordHandler) GetOutgoingList(c *gin.Context) {
 		"msg":     "获取成功",
 		"success": true,
 		"data":    list,
+		"total":   total,
 	})
 }
 

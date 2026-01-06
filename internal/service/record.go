@@ -551,7 +551,7 @@ func (s *RecordService) GetCheckOutList(ctx context.Context, name, bedId, reason
 }
 
 // GetOutgoingList 获取外出登记信息列表
-func (s *RecordService) GetOutgoingList(ctx context.Context, name, startDate, endDate, status string, skip, limit int64) ([]map[string]interface{}, error) {
+func (s *RecordService) GetOutgoingList(ctx context.Context, name, startDate, endDate, status string, skip, limit int64) ([]map[string]interface{}, int64, error) {
 	//获取以往外出（record里的入住）和现在外出（未返回）的记录
 	filter := bson.M{}
 
@@ -559,7 +559,7 @@ func (s *RecordService) GetOutgoingList(ctx context.Context, name, startDate, en
 	if name != "" {
 		customers, _, err := s.customerRepo.FindList(ctx, bson.M{"name": bson.M{"$regex": name, "$options": "i"}}, 0, 0)
 		if err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 		var customerIDs []primitive.ObjectID
 		for _, c := range customers {
@@ -568,7 +568,7 @@ func (s *RecordService) GetOutgoingList(ctx context.Context, name, startDate, en
 		if len(customerIDs) > 0 {
 			filter["customer_id"] = bson.M{"$in": customerIDs}
 		} else {
-			return []map[string]interface{}{}, nil
+			return []map[string]interface{}{}, 0, nil
 		}
 	}
 
@@ -598,9 +598,9 @@ func (s *RecordService) GetOutgoingList(ctx context.Context, name, startDate, en
 		}
 	}
 
-	records, _, err := s.recordRepo.FindList(ctx, filter, skip, limit)
+	records, total, err := s.recordRepo.FindList(ctx, filter, skip, limit)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	var results []map[string]interface{}
@@ -620,7 +620,7 @@ func (s *RecordService) GetOutgoingList(ctx context.Context, name, startDate, en
 			if r.Type == "退住" {
 				continue
 			}
-			currentStatus = "外出中"
+			currentStatus = "已外出"
 		}
 
 		item := map[string]interface{}{
@@ -639,7 +639,7 @@ func (s *RecordService) GetOutgoingList(ctx context.Context, name, startDate, en
 		}
 		results = append(results, item)
 	}
-	return results, nil
+	return results, total, nil
 }
 
 // UpdateOutgoingRecord 更新外出记录（包含所有业务逻辑）
