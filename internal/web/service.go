@@ -47,7 +47,7 @@ func (h *ServiceHandler) RegisterRoutes(server gin.IRouter) {
 // @Param        skip    query     int     false  "跳过数量"  default(0)
 // @Param        limit   query     int     false  "每页数量"  default(20)
 // @Success      200     {object}  map[string]interface{}  "获取成功"
-// @Router       /services/customer-service [get]
+// @Router       /api/services/customer-services_by_group [get]
 func (h *ServiceHandler) GetCustomerService(c *gin.Context) {
 	status := c.Query("status")
 	skipStr := c.DefaultQuery("skip", "0")

@@ -134,6 +134,52 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/services/customer-services_by_group": {
+            "get": {
+                "description": "分页获取所有客户购买的服务记录，按用户ID分组显示，包含用户名称和服务名称",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "服务管理"
+                ],
+                "summary": "获取按用户分组的客户服务列表",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "状态：进行中/已结束/已取消",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "跳过数量",
+                        "name": "skip",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "每页数量",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "获取成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/beds": {
             "get": {
                 "description": "根据条件分页获取床位列表",
@@ -2528,52 +2574,6 @@ const docTemplate = `{
                 "responses": {
                     "200": {
                         "description": "创建成功",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/services/customer-service": {
-            "get": {
-                "description": "分页获取所有客户购买的服务记录，按用户ID分组显示，包含用户名称和服务名称",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "服务管理"
-                ],
-                "summary": "获取按用户分组的客户服务列表",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "状态：进行中/已结束/已取消",
-                        "name": "status",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "default": 0,
-                        "description": "跳过数量",
-                        "name": "skip",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "default": 20,
-                        "description": "每页数量",
-                        "name": "limit",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "获取成功",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
