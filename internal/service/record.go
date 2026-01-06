@@ -228,7 +228,7 @@ func (s *RecordService) Outgoing(ctx context.Context, customerID primitive.Objec
 
 // Return 外出返回
 func (s *RecordService) Return(ctx context.Context, recordsID primitive.ObjectID, note, createdBy string) error {
-	//查找纪律
+	//查找记录
 	record, err := s.recordRepo.FindById(ctx, recordsID)
 	if err != nil {
 		return err
@@ -248,9 +248,8 @@ func (s *RecordService) Return(ctx context.Context, recordsID primitive.ObjectID
 
 	// 更新客户状态
 	var updates = map[string]interface{}{
-		"status":       "入住中",
-		"updated_at":   time.Now(),
-		"check_out_at": time.Time{},
+		"status":     "入住中",
+		"updated_at": time.Now(),
 	}
 	err = s.customerRepo.Update(ctx, customer.ID, updates)
 	if err != nil {
@@ -553,9 +552,8 @@ func (s *RecordService) GetCheckOutList(ctx context.Context, name, bedId, reason
 
 // GetOutgoingList 获取外出登记信息列表
 func (s *RecordService) GetOutgoingList(ctx context.Context, name, startDate, endDate, status string) ([]map[string]interface{}, error) {
-	filter := bson.M{
-		"type": "外出",
-	}
+	//获取以往外出（record里的入住）和现在外出（未返回）的记录
+	filter := bson.M{}
 
 	// 名字筛选
 	if name != "" {
@@ -606,19 +604,14 @@ func (s *RecordService) GetOutgoingList(ctx context.Context, name, startDate, en
 			phone = customer.ContactPhone // 使用紧急联系人电话
 		}
 
-		isReturned := !r.EndTime.IsZero()
-		currentStatus := "已外出"
-		if isReturned {
-			currentStatus = "已返回"
-		}
-
-		if status != "" && status != "全部" {
-			if status == "已外出" && isReturned {
+		// 除了退住状态的记录都返回
+		currentStatus := "已返回"
+		if r.EndTime.IsZero() {
+			//判断type是否是退住
+			if r.Type == "退住" {
 				continue
 			}
-			if status == "已返回" && !isReturned {
-				continue
-			}
+			currentStatus = "外出中"
 		}
 
 		item := map[string]interface{}{
