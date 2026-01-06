@@ -107,3 +107,102 @@ func (dao *CareRecordDAO) AppendRecord(ctx context.Context, id primitive.ObjectI
 	)
 	return err
 }
+
+// FindRecordsByCustomerId 根据 CustomerId 查询护理记录，按 care_time 过滤
+// 返回完整的 CareRecords 结构（records 只包含符合条件的记录）和符合条件的记录总数
+func (dao *CareRecordDAO) FindRecordsByCustomerId(ctx context.Context, customerID primitive.ObjectID, startTime, endTime *time.Time, skip, limit int64) (*domain.CareRecords, int64, error) {
+	// 首先获取文档基本信息
+	var baseRecord domain.CareRecords
+	err := dao.collection.FindOne(ctx, bson.M{"customer_id": customerID}).Decode(&baseRecord)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, 0, nil
+		}
+		return nil, 0, err
+	}
+
+	// 构建聚合管道来过滤和分页 records
+	pipeline := mongo.Pipeline{}
+
+	// 1. 匹配 customer_id
+	pipeline = append(pipeline, bson.D{{Key: "$match", Value: bson.M{"customer_id": customerID}}})
+
+	// 2. 展开 records 数组
+	pipeline = append(pipeline, bson.D{{Key: "$unwind", Value: "$records"}})
+
+	// 3. 按 care_time 过滤
+	if startTime != nil || endTime != nil {
+		matchFilter := bson.M{}
+		if startTime != nil && endTime != nil {
+			matchFilter["records.care_time"] = bson.M{"$gte": *startTime, "$lt": *endTime}
+		} else if startTime != nil {
+			matchFilter["records.care_time"] = bson.M{"$gte": *startTime}
+		} else if endTime != nil {
+			matchFilter["records.care_time"] = bson.M{"$lt": *endTime}
+		}
+		pipeline = append(pipeline, bson.D{{Key: "$match", Value: matchFilter}})
+	}
+
+	// 4. 按 care_time 倒序排序
+	pipeline = append(pipeline, bson.D{{Key: "$sort", Value: bson.D{{Key: "records.care_time", Value: -1}}}})
+
+	// 复制 pipeline 用于计数（在分页之前）
+	countPipeline := make(mongo.Pipeline, len(pipeline))
+	copy(countPipeline, pipeline)
+	countPipeline = append(countPipeline, bson.D{{Key: "$count", Value: "total"}})
+
+	// 5. 分页
+	if skip > 0 {
+		pipeline = append(pipeline, bson.D{{Key: "$skip", Value: skip}})
+	}
+	if limit > 0 {
+		pipeline = append(pipeline, bson.D{{Key: "$limit", Value: limit}})
+	}
+
+	// 6. 重新组合成完整文档结构
+	pipeline = append(pipeline, bson.D{{Key: "$group", Value: bson.M{
+		"_id":           "$_id",
+		"customer_id":   bson.M{"$first": "$customer_id"},
+		"customer_name": bson.M{"$first": "$customer_name"},
+		"updated_at":    bson.M{"$first": "$updated_at"},
+		"records":       bson.M{"$push": "$records"},
+	}}})
+
+	// 执行聚合查询
+	cursor, err := dao.collection.Aggregate(ctx, pipeline)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer cursor.Close(ctx)
+
+	var results []domain.CareRecords
+	if err = cursor.All(ctx, &results); err != nil {
+		return nil, 0, err
+	}
+
+	// 获取总数
+	var total int64 = 0
+	countCursor, err := dao.collection.Aggregate(ctx, countPipeline)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer countCursor.Close(ctx)
+
+	var countResult []struct {
+		Total int64 `bson:"total"`
+	}
+	if err = countCursor.All(ctx, &countResult); err != nil {
+		return nil, 0, err
+	}
+	if len(countResult) > 0 {
+		total = countResult[0].Total
+	}
+
+	// 如果没有符合条件的记录，返回基本信息但 records 为空
+	if len(results) == 0 {
+		baseRecord.Records = []domain.RecordItems{}
+		return &baseRecord, total, nil
+	}
+
+	return &results[0], total, nil
+}

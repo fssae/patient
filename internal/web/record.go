@@ -56,7 +56,7 @@ func (h *RecordHandler) CheckIn(c *gin.Context) {
 	}
 
 	// 简单的参数校验
-	if req.Name == "" || req.IDCard == "" || req.BedID == "" || req.HealthLevel == "" || req.NursingLevel == "" || req.DietaryType == "" {
+	if req.Name == "" || req.IDCard == "" || req.BedID == "" || req.HealthLevel == "" || req.NursingLevel == "" || req.DietaryType == "" || req.CheckInDate == "" {
 		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  "必填参数缺失",
