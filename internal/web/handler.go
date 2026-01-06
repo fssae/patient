@@ -3,8 +3,9 @@ package web
 import (
 	"classroom-analysis/internal/domain"
 	"classroom-analysis/internal/service"
-	"classroom-analysis/internal/web/ginx"
 	"classroom-analysis/internal/web/middleware"
+
+	"gitee.com/fssae/ginx"
 
 	"github.com/gin-gonic/gin"
 )

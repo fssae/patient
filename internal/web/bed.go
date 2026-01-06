@@ -3,7 +3,8 @@ package web
 import (
 	"classroom-analysis/internal/domain"
 	"classroom-analysis/internal/service"
-	"classroom-analysis/internal/web/ginx"
+
+	"gitee.com/fssae/ginx"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson/primitive"

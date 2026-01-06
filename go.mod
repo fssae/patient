@@ -3,6 +3,7 @@ module classroom-analysis
 go 1.25.1
 
 require (
+	gitee.com/fssae/ginx v1.0.1
 	gitee.com/huahua20414/pkgx v1.0.8
 	github.com/IBM/sarama v1.46.1
 	github.com/gin-gonic/gin v1.11.0
@@ -12,6 +13,7 @@ require (
 	github.com/minio/minio-go/v7 v7.0.95
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.23.2
+	github.com/qiniu/qmgo v1.1.10
 	github.com/redis/go-redis/v9 v9.14.0
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/satori/go.uuid v1.2.0
@@ -20,7 +22,7 @@ require (
 	github.com/swaggo/files v1.0.1
 	github.com/swaggo/gin-swagger v1.6.1
 	github.com/swaggo/swag v1.16.6
-	go.mongodb.org/mongo-driver v1.17.4
+	go.mongodb.org/mongo-driver v1.17.6
 	go.uber.org/zap v1.27.0
 	golang.org/x/crypto v0.46.0
 	golang.org/x/exp v0.0.0-20250911091902-df9299821621
@@ -85,7 +87,6 @@ require (
 	github.com/prometheus/client_model v0.6.2 // indirect
 	github.com/prometheus/common v0.66.1 // indirect
 	github.com/prometheus/procfs v0.17.0 // indirect
-	github.com/qiniu/qmgo v1.1.10 // indirect
 	github.com/quic-go/qpack v0.6.0 // indirect
 	github.com/quic-go/quic-go v0.58.0 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20250401214520-65e299d6c5c9 // indirect
@@ -114,3 +115,5 @@ require (
 	golang.org/x/tools v0.40.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 )
+
+replace gitee.com/zjh770910/ginx => gitee.com/fssae/ginx v1.0.1
