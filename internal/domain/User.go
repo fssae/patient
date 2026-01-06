@@ -372,7 +372,7 @@ type CheckOutRequest struct {
 }
 
 type OutgoingRequest struct {
-	CustomerID         string `json:"elder_id"`
+	CustomerID         string `json:"customer_id" binding:"required"`
 	Note               string `json:"note"`
 	CustomerName       string `json:"customer_name"`
 	CreatedBy          string `json:"created_by"`
@@ -380,7 +380,7 @@ type OutgoingRequest struct {
 	EmergencyContact   string `json:"emergencycontact" binding:"required"`
 	Escort             string `json:"escort" binding:"required"`
 	ExpectedReturnTime string `json:"expectedreturntime" binding:"required"`
-	OutTime            string `json:"outTime" binding:"required"`
+	OutTime            string `json:"outTime"`
 	Remark             string `json:"remark"`
 }
 
