@@ -588,14 +588,13 @@ func (s *RecordService) GetOutgoingList(ctx context.Context, name, startDate, en
 		}
 		filter["start_time"] = dateFilter
 	}
-
 	// 状态筛选
 	if status != "" {
 		switch status {
 		case "已返回":
-			filter["type"] = bson.M{"$in": "入住"}
+			filter["type"] = "入住" // 直接匹配
 		case "已外出":
-			filter["type"] = bson.M{"$in": "外出"}
+			filter["type"] = "外出" // 直接匹配
 		}
 	}
 
