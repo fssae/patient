@@ -23,6 +23,7 @@ func NewCareRecordHandler(svc *service.CareRecordService) *CareRecordHandler {
 
 func (h *CareRecordHandler) RegisterRoutes(server gin.IRouter) {
 	group := server.Group("/api/care-records")
+	//TODO添加按时间查询
 	group.GET("", h.GetList)
 	group.GET("/:id", h.GetById)
 	group.POST("", h.Create)
@@ -123,13 +124,16 @@ func (h *CareRecordHandler) GetById(c *gin.Context) {
 // @Router       /care-records [get]
 func (h *CareRecordHandler) GetList(c *gin.Context) {
 	customerName := c.Query("customer_name")
+	startDate := c.Query("start_date")
+	endDate := c.Query("end_date")
+	customerID := c.Query("customer_id")
 	skipStr := c.DefaultQuery("skip", "0")
 	limitStr := c.DefaultQuery("limit", "20")
 
 	skip, _ := strconv.ParseInt(skipStr, 10, 64)
 	limit, _ := strconv.ParseInt(limitStr, 10, 64)
 
-	list, total, err := h.svc.GetList(c.Request.Context(), customerName, skip, limit)
+	list, total, err := h.svc.GetList(c.Request.Context(), customerName, skip, limit, startDate, endDate, customerID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code": 500,

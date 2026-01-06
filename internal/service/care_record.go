@@ -4,8 +4,8 @@ import (
 	"classroom-analysis/internal/domain"
 	"classroom-analysis/internal/repository"
 	"context"
+	"time"
 
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -29,13 +29,36 @@ func (s *CareRecordService) GetById(ctx context.Context, id primitive.ObjectID) 
 	return s.repo.FindById(ctx, id)
 }
 
-// GetList 获取护理记录列表
-func (s *CareRecordService) GetList(ctx context.Context, customerName string, skip, limit int64) ([]*domain.CareRecords, int64, error) {
-	filter := bson.M{}
-	if customerName != "" {
-		filter["customer_name"] = primitive.Regex{Pattern: customerName, Options: "i"}
+// GetList 获取单个用户的护理记录列表
+// 根据 CustomerId 查询，按 care_time 筛选时间范围，返回的 total 为符合条件的记录条数
+func (s *CareRecordService) GetList(ctx context.Context, customerName string, skip, limit int64, startDate, endDate string, customerID string) (*domain.CareRecords, int64, error) {
+	// 如果没有 customerID，返回空结果
+	if customerID == "" {
+		return nil, 0, nil
 	}
-	return s.repo.FindList(ctx, filter, skip, limit)
+
+	// 解析 customerID
+	objID, err := primitive.ObjectIDFromHex(customerID)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// 解析时间范围
+	var startTime, endTime *time.Time
+	if startDate != "" {
+		if t, err := time.Parse("2006-01-02", startDate); err == nil {
+			startTime = &t
+		}
+	}
+	if endDate != "" {
+		if t, err := time.Parse("2006-01-02", endDate); err == nil {
+			// 结束日期包含当天，加一天
+			t = t.Add(24 * time.Hour)
+			endTime = &t
+		}
+	}
+
+	return s.repo.FindRecordsByCustomerId(ctx, objID, startTime, endTime, skip, limit)
 }
 
 // Update 更新护理记录信息

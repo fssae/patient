@@ -195,7 +195,7 @@ type ElderlyRegisterRequest struct {
 	ContactAddress string `json:"contact_address"`                  // 联系地址
 
 	// 入住安排详情
-	CheckInDate  string `json:"check_in_date"`                    // 入住日期 (建议格式 "2025-01-01")
+	CheckInDate  string `json:"check_in_date" binding:"required"` // 入住日期 (建议格式 "2025-01-01")
 	BedID        string `json:"bed_id" binding:"required"`        // 床位分配
 	NursingLevel string `json:"nursing_level" binding:"required"` // 护理级别
 	DietaryType  string `json:"dietary_type" binding:"required"`  // 膳食类型
