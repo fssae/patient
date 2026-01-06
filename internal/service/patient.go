@@ -1,67 +1,78 @@
 package service
 
 import (
-	"classroom-analysis/internal/domain"
-	"classroom-analysis/internal/repository"
-	"context"
-	"errors"
-	"time"
+    "classroom-analysis/internal/domain"
+    "classroom-analysis/internal/repository"
+    "context"
+    "errors"
+    "time"
 
-	"github.com/golang-jwt/jwt/v5"
-	"github.com/spf13/viper"
+    "github.com/golang-jwt/jwt/v5"
+    "github.com/spf13/viper"
 
-	"go.mongodb.org/mongo-driver/bson/primitive"
+    "go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type PatientService struct {
-	patientRepo *repository.PatientRepository
+    patientRepo *repository.PatientRepository
 }
 
 func NewPatientService(
-	patientRepo *repository.PatientRepository,
+    patientRepo *repository.PatientRepository,
 ) *PatientService {
-	return &PatientService{
-		patientRepo: patientRepo,
-	}
+    return &PatientService{
+        patientRepo: patientRepo,
+    }
 }
 
 func (s *PatientService) Login(ctx context.Context, req *domain.PatientLoginRequest) (*domain.PatientLoginResponse, error) {
-	patient, err := s.patientRepo.Login(ctx, req.PatientId, req.Password)
-	if err != nil {
-		return nil, errors.New("用户名或密码错误")
-	}
-	// 生成JWT
-	tokenString, err := createToken(patient.Id, patient.PatientId)
-	return &domain.PatientLoginResponse{
-		Token:   tokenString,
-		Patient: patient,
-	}, nil
+    patient, err := s.patientRepo.Login(ctx, req.PatientId, req.Password)
+    if err != nil {
+        return nil, errors.New("用户名或密码错误")
+    }
+    // 生成JWT
+    tokenString, err := createToken(patient.Id, patient.PatientId)
+    return &domain.PatientLoginResponse{
+        Token:   tokenString,
+        Patient: patient,
+    }, nil
 }
 
 // Register 患者注册
 func (s *PatientService) Register(ctx context.Context, req *domain.PatientRegisterRequest) error {
-	err := s.patientRepo.Register(ctx, req.PatientPhone, req.Password)
+    err := s.patientRepo.Register(ctx, req.PatientPhone, req.Password)
 
-	if err != nil { // 处理注册失败的情况
-		return err
-	}
+    if err != nil { // 处理注册失败的情况
+        return err
+    }
 
-	//注册成功
-	return nil
+    //注册成功
+    return nil
 }
 func createToken(Id primitive.ObjectID, patientId string) (tokenString string, err error) {
-	secret := viper.GetString("general.jwt")
-	claims := domain.PatientClaims{
-		//设置参数
-		RegisteredClaims: jwt.RegisteredClaims{
-			//设置300天的过期时间
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 24 * 300)),
-		},
-		Id:        Id,
-		PatientId: patientId,
-	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	//加密
-	tokenStr, err := token.SignedString([]byte(secret))
-	return tokenStr, err
+    secret := viper.GetString("jwt.secret")
+    if secret == "" {
+        secret = viper.GetString("general.jwt")
+    }
+    
+    expirationHours := viper.GetInt("jwt.expiration_hours")
+    if expirationHours == 0 {
+        expirationHours = 24
+    }
+    
+    now := time.Now()
+    claims := domain.PatientClaims{
+        Id:          Id,
+        PatientId:   patientId,
+        RefreshedAt: now.Unix(),
+        TokenType:   "patient",
+        RegisteredClaims: jwt.RegisteredClaims{
+            ExpiresAt: jwt.NewNumericDate(now.Add(time.Hour * time.Duration(expirationHours))),
+            IssuedAt:  jwt.NewNumericDate(now),
+            NotBefore: jwt.NewNumericDate(now),
+        },
+    }
+    token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+    tokenStr, err := token.SignedString([]byte(secret))
+    return tokenStr, err
 }

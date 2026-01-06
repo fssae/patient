@@ -22,6 +22,19 @@ role:
 general:
   password: "zjh770910"
   jwt: "zjh770910"
+jwt:
+  secret: "zjh770910"
+  expiration_hours: 24
+  refresh_threshold_hours: 1
+  ignore_paths:
+    - /login
+    - /register
+    - /api/user/login
+    - /api/user/register
+    - /health
+    - /swagger/*
+    - /metrics
+    - /debug/*
 kafka:
   address: "82.156.64.69:9092"
   brokers: ["82.156.64.69:9092"]
