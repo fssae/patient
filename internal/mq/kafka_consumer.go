@@ -73,7 +73,7 @@ func (c *AlertConsumer) SetMessageHandler(handler func(msg *AlertMessage)) {
 // Start 启动消费者循环
 func (c *AlertConsumer) Start(ctx context.Context) {
 	config := sarama.NewConfig()
-	config.Version = sarama.V2_1_0_0                      // 与 ioc/kafka.go 保持一致
+	config.Version = sarama.V2_3_0_0                      // 需要 >= 2.3 以支持 Consumer.Group.InstanceId
 	config.Consumer.Offsets.Initial = sarama.OffsetNewest // 从最新消息开始，避免重复消费
 
 	// 消费者组配置 - 确保正确的分区分配

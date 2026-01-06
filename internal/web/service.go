@@ -32,7 +32,46 @@ func (h *ServiceHandler) RegisterRoutes(server gin.IRouter) {
 	group.DELETE("/:id", h.DeleteService)
 	group.POST("/purchase", h.PurchaseService)
 	group.GET("/customer/:customer_id", h.GetCustomerServices)
-	group.PUT("/customer-service/:id/end", h.EndService)
+	group.PUT("/customer_service/:id/end", h.EndService)
+	//获取客户服务列表，去重
+	group.GET("/customer-services_by_group", h.GetCustomerService)
+}
+
+// GetCustomerService 获取按用户分组的客户服务列表（包含用户名称和服务名称）
+// @Summary      获取按用户分组的客户服务列表
+// @Description  分页获取所有客户购买的服务记录，按用户ID分组显示，包含用户名称和服务名称
+// @Tags         服务管理
+// @Accept       json
+// @Produce      json
+// @Param        status  query     string  false  "状态：进行中/已结束/已取消"
+// @Param        skip    query     int     false  "跳过数量"  default(0)
+// @Param        limit   query     int     false  "每页数量"  default(20)
+// @Success      200     {object}  map[string]interface{}  "获取成功"
+// @Router       /services/customer-service [get]
+func (h *ServiceHandler) GetCustomerService(c *gin.Context) {
+	status := c.Query("status")
+	skipStr := c.DefaultQuery("skip", "0")
+	limitStr := c.DefaultQuery("limit", "20")
+
+	skip, _ := strconv.ParseInt(skipStr, 10, 64)
+	limit, _ := strconv.ParseInt(limitStr, 10, 64)
+
+	list, total, err := h.svc.GetCustomerServiceByGroup(c.Request.Context(), status, skip, limit)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code": 500,
+			"msg":  err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":    200,
+		"msg":     "获取成功",
+		"success": true,
+		"data":    list,
+		"total":   total,
+	})
 }
 
 // GetCustomerServiceList 获取客户购买的服务列表（支持分页和筛选）
