@@ -597,6 +597,7 @@ func (s *RecordService) GetOutgoingList(ctx context.Context, name, startDate, en
 		case "已外出":
 			filter["type"] = "外出" // 直接匹配
 			//已外出没有endDate
+			filter["end_time"] = bson.M{"$exists": false}
 		}
 	}
 
