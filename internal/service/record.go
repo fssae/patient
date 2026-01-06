@@ -551,7 +551,7 @@ func (s *RecordService) GetCheckOutList(ctx context.Context, name, bedId, reason
 }
 
 // GetOutgoingList 获取外出登记信息列表
-func (s *RecordService) GetOutgoingList(ctx context.Context, name, startDate, endDate, status string) ([]map[string]interface{}, error) {
+func (s *RecordService) GetOutgoingList(ctx context.Context, name, startDate, endDate, status string, skip, limit int64) ([]map[string]interface{}, error) {
 	//获取以往外出（record里的入住）和现在外出（未返回）的记录
 	filter := bson.M{}
 
@@ -589,7 +589,17 @@ func (s *RecordService) GetOutgoingList(ctx context.Context, name, startDate, en
 		filter["start_time"] = dateFilter
 	}
 
-	records, _, err := s.recordRepo.FindList(ctx, filter, 0, 0)
+	// 状态筛选
+	if status != "" {
+		switch status {
+		case "已返回":
+			filter["type"] = bson.M{"$in": "入住"}
+		case "已外出":
+			filter["type"] = bson.M{"$in": "外出"}
+		}
+	}
+
+	records, _, err := s.recordRepo.FindList(ctx, filter, skip, limit)
 	if err != nil {
 		return nil, err
 	}
