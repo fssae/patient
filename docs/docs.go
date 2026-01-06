@@ -24,6 +24,43 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/alerts/{id}/resolve": {
+            "put": {
+                "description": "将指定告警标记为已处理",
+                "tags": [
+                    "告警管理"
+                ],
+                "summary": "解除告警",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "告警ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "解除成功"
+                    },
+                    "404": {
+                        "description": "告警不存在",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "服务器错误",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/analysis/logs": {
             "get": {
                 "description": "分页获取存储在 MongoDB 中的报警和会话分析记录",
@@ -89,6 +126,52 @@ const docTemplate = `{
                 "responses": {
                     "200": {
                         "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/services/customer-services_by_group": {
+            "get": {
+                "description": "分页获取所有客户购买的服务记录，按用户ID分组显示，包含用户名称和服务名称",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "服务管理"
+                ],
+                "summary": "获取按用户分组的客户服务列表",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "状态：进行中/已结束/已取消",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "跳过数量",
+                        "name": "skip",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "每页数量",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "获取成功",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -1694,6 +1777,92 @@ const docTemplate = `{
                 }
             }
         },
+        "/notifications/call": {
+            "post": {
+                "description": "触发对指定角色的通知推送",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "通知推送"
+                ],
+                "summary": "呼叫医护人员",
+                "parameters": [
+                    {
+                        "description": "呼叫请求",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/web.CallRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "呼叫成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/patients/{patient_id}": {
+            "get": {
+                "description": "根据患者ID获取详细信息",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "患者信息"
+                ],
+                "summary": "获取患者详情",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "患者ID",
+                        "name": "patient_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "获取成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "无效的ID",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "患者不存在",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/records": {
             "get": {
                 "description": "分页获取所有登记记录",
@@ -2413,6 +2582,64 @@ const docTemplate = `{
                 }
             }
         },
+        "/services/customer-service-list": {
+            "get": {
+                "description": "分页获取所有客户购买的服务记录，支持按客户ID、服务ID、状态筛选",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "服务管理"
+                ],
+                "summary": "获取客户服务列表",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "客户ID",
+                        "name": "customer_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "服务ID",
+                        "name": "service_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "状态：进行中/已结束/已取消",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "跳过数量",
+                        "name": "skip",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "每页数量",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "获取成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/services/customer-service/{id}/end": {
             "put": {
                 "description": "根据购买记录ID手动结束一项服务",
@@ -2634,6 +2861,26 @@ const docTemplate = `{
                 }
             }
         },
+        "/staff/on-duty": {
+            "get": {
+                "description": "获取当前在岗的医护人员列表",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "值班管理"
+                ],
+                "summary": "获取值班人员",
+                "responses": {
+                    "200": {
+                        "description": "获取成功",
+                        "schema": {
+                            "$ref": "#/definitions/web.DutyStaffInfo"
+                        }
+                    }
+                }
+            }
+        },
         "/stats/summary": {
             "get": {
                 "description": "获取当前系统的统计概览数据，包括报警统计等",
@@ -2671,6 +2918,29 @@ const docTemplate = `{
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/stats/trends": {
+            "get": {
+                "description": "获取最近24小时的告警趋势数据",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "统计分析"
+                ],
+                "summary": "获取24小时告警趋势",
+                "responses": {
+                    "200": {
+                        "description": "获取成功",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/web.TrendDataCompat"
+                            }
                         }
                     }
                 }
@@ -3312,17 +3582,41 @@ const docTemplate = `{
         "domain.OutgoingRequest": {
             "type": "object",
             "required": [
-                "created_by",
-                "customer_id"
+                "destination",
+                "emergencycontact",
+                "escort",
+                "expectedreturntime",
+                "outTime"
             ],
             "properties": {
                 "created_by": {
                     "type": "string"
                 },
-                "customer_id": {
+                "customer_name": {
+                    "type": "string"
+                },
+                "destination": {
+                    "type": "string"
+                },
+                "elder_id": {
+                    "type": "string"
+                },
+                "emergencycontact": {
+                    "type": "string"
+                },
+                "escort": {
+                    "type": "string"
+                },
+                "expectedreturntime": {
                     "type": "string"
                 },
                 "note": {
+                    "type": "string"
+                },
+                "outTime": {
+                    "type": "string"
+                },
+                "remark": {
                     "type": "string"
                 }
             }
@@ -3409,14 +3703,13 @@ const docTemplate = `{
         "domain.ReturnRequest": {
             "type": "object",
             "required": [
-                "created_by",
-                "customer_id"
+                "id"
             ],
             "properties": {
                 "created_by": {
                     "type": "string"
                 },
-                "customer_id": {
+                "id": {
                     "type": "string"
                 },
                 "note": {
@@ -3615,6 +3908,56 @@ const docTemplate = `{
                 },
                 "snack": {
                     "description": "加餐",
+                    "type": "string"
+                }
+            }
+        },
+        "web.CallRequest": {
+            "type": "object",
+            "required": [
+                "alert_id",
+                "target_role"
+            ],
+            "properties": {
+                "alert_id": {
+                    "type": "string"
+                },
+                "target_role": {
+                    "description": "doctor, nurse, manager",
+                    "type": "string"
+                }
+            }
+        },
+        "web.DutyStaffInfo": {
+            "type": "object",
+            "properties": {
+                "doctors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "lastUpdated": {
+                    "type": "integer"
+                },
+                "nurses": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "onDutyCount": {
+                    "type": "integer"
+                }
+            }
+        },
+        "web.TrendDataCompat": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "time": {
                     "type": "string"
                 }
             }

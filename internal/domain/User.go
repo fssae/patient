@@ -397,3 +397,22 @@ type PurchaseServiceRequest struct {
 	ServiceID  string `json:"service_id" binding:"required"`
 	StartDate  string `json:"start_date" binding:"required"`
 }
+
+// CustomerServiceItem 单个客户服务项（包含服务名称）
+type CustomerServiceItem struct {
+	ID          primitive.ObjectID `json:"id,omitempty"`
+	ServiceID   primitive.ObjectID `json:"service_id"`
+	ServiceName string             `json:"service_name"` // 服务名称
+	StartDate   time.Time          `json:"start_date"`
+	EndDate     time.Time          `json:"end_date,omitempty"`
+	Status      string             `json:"status"`
+	CreatedAt   time.Time          `json:"created_at"`
+	UpdatedAt   time.Time          `json:"updated_at"`
+}
+
+// CustomerServiceGroup 按用户分组的服务列表
+type CustomerServiceGroup struct {
+	CustomerID   primitive.ObjectID     `json:"customer_id"`
+	CustomerName string                 `json:"customer_name"` // 用户名称
+	Services     []*CustomerServiceItem `json:"services"`      // 该用户下的服务列表
+}

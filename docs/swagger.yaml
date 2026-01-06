@@ -328,13 +328,30 @@ definitions:
     properties:
       created_by:
         type: string
-      customer_id:
+      customer_name:
+        type: string
+      destination:
+        type: string
+      elder_id:
+        type: string
+      emergencycontact:
+        type: string
+      escort:
+        type: string
+      expectedreturntime:
         type: string
       note:
         type: string
+      outTime:
+        type: string
+      remark:
+        type: string
     required:
-    - created_by
-    - customer_id
+    - destination
+    - emergencycontact
+    - escort
+    - expectedreturntime
+    - outTime
     type: object
   domain.PatientLoginRequest:
     properties:
@@ -395,13 +412,12 @@ definitions:
     properties:
       created_by:
         type: string
-      customer_id:
+      id:
         type: string
       note:
         type: string
     required:
-    - created_by
-    - customer_id
+    - id
     type: object
   domain.Room:
     properties:
@@ -537,6 +553,39 @@ definitions:
         description: 加餐
         type: string
     type: object
+  web.CallRequest:
+    properties:
+      alert_id:
+        type: string
+      target_role:
+        description: doctor, nurse, manager
+        type: string
+    required:
+    - alert_id
+    - target_role
+    type: object
+  web.DutyStaffInfo:
+    properties:
+      doctors:
+        items:
+          type: string
+        type: array
+      lastUpdated:
+        type: integer
+      nurses:
+        items:
+          type: string
+        type: array
+      onDutyCount:
+        type: integer
+    type: object
+  web.TrendDataCompat:
+    properties:
+      count:
+        type: integer
+      time:
+        type: string
+    type: object
 host: localhost:8081
 info:
   contact:
@@ -551,6 +600,31 @@ info:
   title: 东软顾养中心 API
   version: "1.0"
 paths:
+  /alerts/{id}/resolve:
+    put:
+      description: 将指定告警标记为已处理
+      parameters:
+      - description: 告警ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: 解除成功
+        "404":
+          description: 告警不存在
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器错误
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 解除告警
+      tags:
+      - 告警管理
   /analysis/logs:
     get:
       consumes:
@@ -600,6 +674,37 @@ paths:
       summary: 解除告警
       tags:
       - 分析管理
+  /api/services/customer-services_by_group:
+    get:
+      consumes:
+      - application/json
+      description: 分页获取所有客户购买的服务记录，按用户ID分组显示，包含用户名称和服务名称
+      parameters:
+      - description: 状态：进行中/已结束/已取消
+        in: query
+        name: status
+        type: string
+      - default: 0
+        description: 跳过数量
+        in: query
+        name: skip
+        type: integer
+      - default: 20
+        description: 每页数量
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 获取按用户分组的客户服务列表
+      tags:
+      - 服务管理
   /beds:
     get:
       consumes:
@@ -1674,6 +1779,64 @@ paths:
       summary: 患者登录
       tags:
       - 患者端
+  /notifications/call:
+    post:
+      consumes:
+      - application/json
+      description: 触发对指定角色的通知推送
+      parameters:
+      - description: 呼叫请求
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/web.CallRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 呼叫成功
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 呼叫医护人员
+      tags:
+      - 通知推送
+  /patients/{patient_id}:
+    get:
+      description: 根据患者ID获取详细信息
+      parameters:
+      - description: 患者ID
+        in: path
+        name: patient_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 无效的ID
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: 患者不存在
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 获取患者详情
+      tags:
+      - 患者信息
   /records:
     get:
       consumes:
@@ -2223,6 +2386,45 @@ paths:
       summary: 更新服务项目
       tags:
       - 服务管理
+  /services/customer-service-list:
+    get:
+      consumes:
+      - application/json
+      description: 分页获取所有客户购买的服务记录，支持按客户ID、服务ID、状态筛选
+      parameters:
+      - description: 客户ID
+        in: query
+        name: customer_id
+        type: string
+      - description: 服务ID
+        in: query
+        name: service_id
+        type: string
+      - description: 状态：进行中/已结束/已取消
+        in: query
+        name: status
+        type: string
+      - default: 0
+        description: 跳过数量
+        in: query
+        name: skip
+        type: integer
+      - default: 20
+        description: 每页数量
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 获取客户服务列表
+      tags:
+      - 服务管理
   /services/customer-service/{id}/end:
     put:
       consumes:
@@ -2301,6 +2503,19 @@ paths:
       summary: 客户购买服务
       tags:
       - 服务管理
+  /staff/on-duty:
+    get:
+      description: 获取当前在岗的医护人员列表
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            $ref: '#/definitions/web.DutyStaffInfo'
+      summary: 获取值班人员
+      tags:
+      - 值班管理
   /stats/summary:
     get:
       description: 获取当前系统的统计概览数据，包括报警统计等
@@ -2327,6 +2542,21 @@ paths:
             additionalProperties: true
             type: object
       summary: 获取趋势分析
+      tags:
+      - 统计分析
+  /stats/trends:
+    get:
+      description: 获取最近24小时的告警趋势数据
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            items:
+              $ref: '#/definitions/web.TrendDataCompat'
+            type: array
+      summary: 获取24小时告警趋势
       tags:
       - 统计分析
   /upload/image:

@@ -3,6 +3,7 @@ package dao
 import (
 	"classroom-analysis/internal/domain"
 	"context"
+	"errors"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -38,7 +39,7 @@ func (dao *CustomerServiceDAO) FindById(ctx context.Context, id primitive.Object
 	var cs domain.CustomerService
 	err := dao.collection.FindOne(ctx, bson.M{"_id": id}).Decode(&cs)
 	if err != nil {
-		if err == mongo.ErrNoDocuments {
+		if errors.Is(err, mongo.ErrNoDocuments) {
 			return nil, nil
 		}
 		return nil, err
@@ -100,4 +101,3 @@ func (dao *CustomerServiceDAO) Update(ctx context.Context, cs *domain.CustomerSe
 	)
 	return err
 }
-

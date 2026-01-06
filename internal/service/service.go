@@ -38,6 +38,90 @@ func NewServiceService(
 	}
 }
 
+// GetCustomerServiceByGroup 按用户分组获取服务列表（包含用户名称和服务名称）
+func (s *ServerService) GetCustomerServiceByGroup(ctx context.Context, status string, skip, limit int64) ([]*domain.CustomerServiceGroup, int64, error) {
+	filter := bson.M{}
+	if status != "" {
+		filter["status"] = status
+	}
+
+	// 查询所有客户服务记录
+	list, total, err := s.customerServiceRepo.FindList(ctx, filter, skip, limit)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// 收集所有需要查询的 CustomerID 和 ServiceID
+	customerIDs := make(map[primitive.ObjectID]bool)
+	serviceIDs := make(map[primitive.ObjectID]bool)
+	for _, cs := range list {
+		customerIDs[cs.CustomerID] = true
+		serviceIDs[cs.ServiceID] = true
+	}
+
+	// 批量查询客户信息（获取客户名称）
+	customerMap := make(map[primitive.ObjectID]*domain.Customer)
+	for id := range customerIDs {
+		customer, err := s.customerRepo.FindById(ctx, id)
+		if err == nil && customer != nil {
+			customerMap[id] = customer
+		}
+	}
+
+	// 批量查询服务信息（获取服务名称）
+	serviceMap := make(map[primitive.ObjectID]*domain.Service)
+	for id := range serviceIDs {
+		service, err := s.serviceRepo.FindById(ctx, id)
+		if err == nil && service != nil {
+			serviceMap[id] = service
+		}
+	}
+
+	// 按用户ID分组组装数据
+	groupMap := make(map[primitive.ObjectID]*domain.CustomerServiceGroup)
+	for _, cs := range list {
+		group, exists := groupMap[cs.CustomerID]
+		if !exists {
+			customerName := ""
+			if customer, ok := customerMap[cs.CustomerID]; ok {
+				customerName = customer.Name
+			}
+			group = &domain.CustomerServiceGroup{
+				CustomerID:   cs.CustomerID,
+				CustomerName: customerName,
+				Services:     make([]*domain.CustomerServiceItem, 0),
+			}
+			groupMap[cs.CustomerID] = group
+		}
+
+		// 获取服务名称
+		serviceName := cs.ServiceName
+		if svc, ok := serviceMap[cs.ServiceID]; ok {
+			serviceName = svc.Name
+		}
+
+		item := &domain.CustomerServiceItem{
+			ID:          cs.ID,
+			ServiceID:   cs.ServiceID,
+			ServiceName: serviceName,
+			StartDate:   cs.StartDate,
+			EndDate:     cs.EndDate,
+			Status:      cs.Status,
+			CreatedAt:   cs.CreatedAt,
+			UpdatedAt:   cs.UpdatedAt,
+		}
+		group.Services = append(group.Services, item)
+	}
+
+	// 转换为切片返回
+	result := make([]*domain.CustomerServiceGroup, 0, len(groupMap))
+	for _, group := range groupMap {
+		result = append(result, group)
+	}
+
+	return result, total, nil
+}
+
 // CreateService 创建服务项目
 func (s *ServerService) CreateService(ctx context.Context, req *domain.Service) error {
 	service := &domain.Service{
@@ -96,6 +180,7 @@ func (s *ServerService) DeleteService(ctx context.Context, id primitive.ObjectID
 	return s.serviceRepo.Delete(ctx, id)
 }
 
+// TODO
 // PurchaseService 客户购买服务
 func (s *ServerService) PurchaseService(ctx context.Context, customerID, serviceID primitive.ObjectID, startDate time.Time) error {
 	// 验证客户是否存在
