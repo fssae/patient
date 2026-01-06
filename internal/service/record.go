@@ -202,6 +202,7 @@ func (s *RecordService) Outgoing(ctx context.Context, customerID primitive.Objec
 		Destination:      req.Destination,
 		EmergencyContact: req.EmergencyContact,
 		Escort:           req.Escort,
+		Remark:           req.Remark,
 		CreatedAt:        time.Now(),
 	}
 
@@ -583,10 +584,10 @@ func (s *RecordService) GetOutgoingList(ctx context.Context, name, startDate, en
 	}
 	// 状态筛选 已外出没有endDate,已返回有endDate
 	if status != "" {
+		filter["type"] = "外出" // 直接匹配
 		switch status {
 		//都是外出记录，只是已返回有endDate
 		case "已返回":
-			filter["type"] = "外出" // 直接匹配
 			if endDate != "" {
 				if t, err := time.Parse("2006-01-02", endDate); err == nil {
 					filter["end_time"] = bson.M{"$lte": t}
@@ -595,7 +596,6 @@ func (s *RecordService) GetOutgoingList(ctx context.Context, name, startDate, en
 				}
 			}
 		case "已外出":
-			filter["type"] = "外出" // 直接匹配
 			//已外出没有endDate
 			filter["end_time"] = bson.M{"$exists": false}
 		}

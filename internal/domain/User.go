@@ -372,7 +372,7 @@ type CheckOutRequest struct {
 }
 
 type OutgoingRequest struct {
-	CustomerID         string `json:"elder_id"`
+	CustomerID         string `json:"customer_id" binding:"required"`
 	Note               string `json:"note"`
 	CustomerName       string `json:"customer_name"`
 	CreatedBy          string `json:"created_by"`
