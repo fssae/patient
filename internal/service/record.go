@@ -617,6 +617,7 @@ func (s *RecordService) GetOutgoingList(ctx context.Context, name, startDate, en
 
 		//退住及入住未外出（没有返回时间）的记录都不要
 		if r.EndTime.IsZero() && r.Type == "入住" {
+			total--
 			continue
 		}
 
