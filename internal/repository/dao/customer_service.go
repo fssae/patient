@@ -91,6 +91,23 @@ func (dao *CustomerServiceDAO) FindList(ctx context.Context, filter bson.M, skip
 	return results, total, nil
 }
 
+// FindDistinctCustomerIDs 获取符合条件的唯一客户ID列表
+func (dao *CustomerServiceDAO) FindDistinctCustomerIDs(ctx context.Context, filter bson.M) ([]primitive.ObjectID, error) {
+	values, err := dao.collection.Distinct(ctx, "customer_id", filter)
+	if err != nil {
+		return nil, err
+	}
+
+	customerIDs := make([]primitive.ObjectID, 0, len(values))
+	for _, v := range values {
+		if oid, ok := v.(primitive.ObjectID); ok {
+			customerIDs = append(customerIDs, oid)
+		}
+	}
+
+	return customerIDs, nil
+}
+
 // Update 更新客户服务信息
 func (dao *CustomerServiceDAO) Update(ctx context.Context, cs *domain.CustomerService) error {
 	cs.UpdatedAt = time.Now()

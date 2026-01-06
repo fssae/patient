@@ -41,7 +41,7 @@ type CallRequest struct {
 func (h *NotificationHandler) CallStaff(c *gin.Context) {
 	var req CallRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"error":   "BAD_REQUEST",
 			"message": "请求参数错误: " + err.Error(),
 		})

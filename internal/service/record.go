@@ -615,11 +615,10 @@ func (s *RecordService) GetOutgoingList(ctx context.Context, name, startDate, en
 		}
 
 		item := map[string]interface{}{
-			"id":            r.ID.Hex(),
-			"customer_name": customerName,
-			"contact_phone": phone,
-			"outgoing_time": r.StartTime,
-			//TODO登记时候显示实际返回时间
+			"id":                   r.ID.Hex(),
+			"customer_name":        customerName,
+			"contact_phone":        phone,
+			"outgoing_time":        r.StartTime,
 			"expected_return_time": r.ExpectedReturnTime, // 暂无数据
 			"actual_return_time":   r.EndTime,
 			"status":               currentStatus,

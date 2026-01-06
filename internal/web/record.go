@@ -48,7 +48,7 @@ func (h *RecordHandler) RegisterRoutes(server gin.IRouter) {
 func (h *RecordHandler) CheckIn(c *gin.Context) {
 	var req domain.ElderlyRegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  "请求参数错误: " + err.Error(),
 		})
@@ -57,7 +57,7 @@ func (h *RecordHandler) CheckIn(c *gin.Context) {
 
 	// 简单的参数校验
 	if req.Name == "" || req.IDCard == "" || req.BedID == "" || req.HealthLevel == "" || req.NursingLevel == "" || req.DietaryType == "" {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  "必填参数缺失",
 		})
@@ -66,7 +66,7 @@ func (h *RecordHandler) CheckIn(c *gin.Context) {
 
 	err := h.svc.CheckIn(c.Request.Context(), &req)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  err.Error(),
 		})
@@ -93,7 +93,7 @@ func (h *RecordHandler) CheckIn(c *gin.Context) {
 func (h *RecordHandler) CheckOut(c *gin.Context) {
 	var req domain.CheckOutRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  "请求参数错误: " + err.Error(),
 		})
@@ -102,7 +102,7 @@ func (h *RecordHandler) CheckOut(c *gin.Context) {
 
 	customerID, err := primitive.ObjectIDFromHex(req.CustomerID)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  "无效的客户ID",
 		})
@@ -111,7 +111,7 @@ func (h *RecordHandler) CheckOut(c *gin.Context) {
 
 	err = h.svc.CheckOut(c.Request.Context(), customerID, req.Note, req.CreatedBy)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  err.Error(),
 		})
@@ -137,7 +137,7 @@ func (h *RecordHandler) CheckOut(c *gin.Context) {
 func (h *RecordHandler) Outgoing(c *gin.Context) {
 	var req domain.OutgoingRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  "请求参数错误: " + err.Error(),
 		})
@@ -146,7 +146,7 @@ func (h *RecordHandler) Outgoing(c *gin.Context) {
 
 	customerID, err := primitive.ObjectIDFromHex(req.CustomerID)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  "无效的客户ID",
 		})
@@ -155,7 +155,7 @@ func (h *RecordHandler) Outgoing(c *gin.Context) {
 
 	err = h.svc.Outgoing(c.Request.Context(), customerID, &req)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  err.Error(),
 		})
@@ -181,7 +181,7 @@ func (h *RecordHandler) Outgoing(c *gin.Context) {
 func (h *RecordHandler) Return(c *gin.Context) {
 	var req domain.ReturnRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  "请求参数错误: " + err.Error(),
 		})
@@ -190,7 +190,7 @@ func (h *RecordHandler) Return(c *gin.Context) {
 
 	RecordsID, err := primitive.ObjectIDFromHex(req.RecordsID)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  "无效的客户ID",
 		})
@@ -199,7 +199,7 @@ func (h *RecordHandler) Return(c *gin.Context) {
 
 	err = h.svc.Return(c.Request.Context(), RecordsID, req.Note, req.CreatedBy)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  err.Error(),
 		})
@@ -270,7 +270,7 @@ func (h *RecordHandler) GetByCustomerID(c *gin.Context) {
 	customerIDStr := c.Param("customer_id")
 	customerID, err := primitive.ObjectIDFromHex(customerIDStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  "无效的客户ID",
 		})
@@ -416,7 +416,7 @@ func (h *RecordHandler) GetOutgoingList(c *gin.Context) {
 func (h *RecordHandler) OutgoingUpload(c *gin.Context) {
 	var req domain.UpdateRecordRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code":    400,
 			"msg":     "请求参数错误: " + err.Error(),
 			"success": false,

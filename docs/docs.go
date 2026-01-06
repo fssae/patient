@@ -2715,6 +2715,81 @@ const docTemplate = `{
                 }
             }
         },
+        "/services/customer_service/{id}/cancel": {
+            "put": {
+                "description": "根据购买记录ID取消一项服务（将状态设置为已取消）",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "服务管理"
+                ],
+                "summary": "取消客户单一服务",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "购买记录ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "取消成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/services/customer_service/{id}/end_date": {
+            "put": {
+                "description": "根据购买记录ID修改服务的结束时间（不改变状态）",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "服务管理"
+                ],
+                "summary": "修改客户服务结束时间",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "购买记录ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "结束时间信息",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.EndServiceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "修改成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/services/purchase": {
             "post": {
                 "description": "为客户购买指定的服务项目",
@@ -3772,6 +3847,10 @@ const docTemplate = `{
                 },
                 "description": {
                     "type": "string"
+                },
+                "duration": {
+                    "description": "TODO",
+                    "type": "integer"
                 },
                 "id": {
                     "type": "string"

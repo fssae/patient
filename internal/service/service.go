@@ -38,37 +38,77 @@ func NewServiceService(
 	}
 }
 
-// GetCustomerServiceByGroup 按用户分组获取服务列表（包含用户名称和服务名称）
-func (s *ServerService) GetCustomerServiceByGroup(ctx context.Context, status string, skip, limit int64) ([]*domain.CustomerServiceGroup, int64, error) {
+// GetCustomerServiceByGroup 获取客户服务列表（包含用户名称和服务名称）
+// 分页基于用户数量，skip=1 表示跳过1个用户，limit=10 表示返回10个用户的所有服务记录
+func (s *ServerService) GetCustomerServiceByGroup(ctx context.Context, status string, skip, limit int64) ([]*domain.CustomerServiceResponse, int64, error) {
 	filter := bson.M{}
 	if status != "" {
 		filter["status"] = status
 	}
 
-	// 查询所有客户服务记录
-	list, total, err := s.customerServiceRepo.FindList(ctx, filter, skip, limit)
+	// 先获取所有符合条件的唯一用户ID列表（用于分页）
+	allCustomerIDs, err := s.customerServiceRepo.FindDistinctCustomerIDs(ctx, filter)
 	if err != nil {
 		return nil, 0, err
 	}
 
-	// 收集所有需要查询的 CustomerID 和 ServiceID
-	customerIDs := make(map[primitive.ObjectID]bool)
+	// 用户总数
+	totalCustomers := int64(len(allCustomerIDs))
+	if totalCustomers == 0 {
+		return []*domain.CustomerServiceResponse{}, 0, nil
+	}
+
+	// 对用户ID列表进行分页
+	startIdx := skip
+	if startIdx < 0 {
+		startIdx = 0
+	}
+	if startIdx >= totalCustomers {
+		return []*domain.CustomerServiceResponse{}, totalCustomers, nil
+	}
+
+	endIdx := startIdx + limit
+	if limit <= 0 || endIdx > totalCustomers {
+		endIdx = totalCustomers
+	}
+
+	// 获取当前页的用户ID
+	pagedCustomerIDs := allCustomerIDs[startIdx:endIdx]
+
+	// 查询这些用户的所有服务记录
+	customerIDFilter := bson.M{"customer_id": bson.M{"$in": pagedCustomerIDs}}
+	if status != "" {
+		customerIDFilter["status"] = status
+	}
+	list, _, err := s.customerServiceRepo.FindList(ctx, customerIDFilter, 0, 0)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// 收集所有需要查询的 ServiceID
 	serviceIDs := make(map[primitive.ObjectID]bool)
 	for _, cs := range list {
-		customerIDs[cs.CustomerID] = true
 		serviceIDs[cs.ServiceID] = true
 	}
 
-	// 批量查询客户信息（获取客户名称）
+	// 批量查询客户信息（包含完整信息以获取 BedID 和 CareLevelID）
 	customerMap := make(map[primitive.ObjectID]*domain.Customer)
-	for id := range customerIDs {
+	bedIDs := make(map[primitive.ObjectID]bool)
+	careLevelIDs := make(map[primitive.ObjectID]bool)
+	for _, id := range pagedCustomerIDs {
 		customer, err := s.customerRepo.FindById(ctx, id)
 		if err == nil && customer != nil {
 			customerMap[id] = customer
+			if !customer.BedID.IsZero() {
+				bedIDs[customer.BedID] = true
+			}
+			if !customer.CareLevelID.IsZero() {
+				careLevelIDs[customer.CareLevelID] = true
+			}
 		}
 	}
 
-	// 批量查询服务信息（获取服务名称）
+	// 批量查询服务信息
 	serviceMap := make(map[primitive.ObjectID]*domain.Service)
 	for id := range serviceIDs {
 		service, err := s.serviceRepo.FindById(ctx, id)
@@ -77,49 +117,64 @@ func (s *ServerService) GetCustomerServiceByGroup(ctx context.Context, status st
 		}
 	}
 
-	// 按用户ID分组组装数据
-	groupMap := make(map[primitive.ObjectID]*domain.CustomerServiceGroup)
+	// 批量查询床位信息
+	bedMap := make(map[primitive.ObjectID]*domain.Bed)
+	for id := range bedIDs {
+		bed, err := s.bedRepo.FindById(ctx, id)
+		if err == nil && bed != nil {
+			bedMap[id] = bed
+		}
+	}
+
+	// 批量查询护理级别信息
+	careLevelMap := make(map[primitive.ObjectID]*domain.CareLevel)
+	for id := range careLevelIDs {
+		careLevel, err := s.careLevelRepo.FindById(ctx, id)
+		if err == nil && careLevel != nil {
+			careLevelMap[id] = careLevel
+		}
+	}
+
+	// 组装响应数据
+	result := make([]*domain.CustomerServiceResponse, 0, len(list))
 	for _, cs := range list {
-		group, exists := groupMap[cs.CustomerID]
-		if !exists {
-			customerName := ""
-			if customer, ok := customerMap[cs.CustomerID]; ok {
-				customerName = customer.Name
-			}
-			group = &domain.CustomerServiceGroup{
-				CustomerID:   cs.CustomerID,
-				CustomerName: customerName,
-				Services:     make([]*domain.CustomerServiceItem, 0),
-			}
-			groupMap[cs.CustomerID] = group
-		}
-
-		// 获取服务名称
-		serviceName := cs.ServiceName
-		if svc, ok := serviceMap[cs.ServiceID]; ok {
-			serviceName = svc.Name
-		}
-
-		item := &domain.CustomerServiceItem{
+		resp := &domain.CustomerServiceResponse{
 			ID:          cs.ID,
+			CustomerID:  cs.CustomerID,
 			ServiceID:   cs.ServiceID,
-			ServiceName: serviceName,
+			ServiceName: cs.ServiceName,
 			StartDate:   cs.StartDate,
 			EndDate:     cs.EndDate,
 			Status:      cs.Status,
 			CreatedAt:   cs.CreatedAt,
 			UpdatedAt:   cs.UpdatedAt,
 		}
-		group.Services = append(group.Services, item)
+
+		// 填充客户相关信息（姓名、床位号、护理级别）
+		if customer, ok := customerMap[cs.CustomerID]; ok {
+			resp.CustomerName = customer.Name
+			// 填充床位号
+			if bed, bedOk := bedMap[customer.BedID]; bedOk {
+				resp.BedNumber = bed.Number
+			}
+			// 填充护理级别
+			if careLevel, clOk := careLevelMap[customer.CareLevelID]; clOk {
+				resp.CareLevelstr = careLevel.Name
+			}
+		}
+
+		// 填充服务详情
+		if svc, ok := serviceMap[cs.ServiceID]; ok {
+			resp.ServiceName = svc.Name
+			resp.ServiceDesc = svc.Description
+			resp.Category = svc.Category
+			resp.Price = svc.Price
+			resp.Unit = svc.Unit
+		}
+		result = append(result, resp)
 	}
 
-	// 转换为切片返回
-	result := make([]*domain.CustomerServiceGroup, 0, len(groupMap))
-	for _, group := range groupMap {
-		result = append(result, group)
-	}
-
-	return result, total, nil
+	return result, totalCustomers, nil
 }
 
 // CreateService 创建服务项目
@@ -343,6 +398,38 @@ func (s *ServerService) EndService(ctx context.Context, customerServiceID primit
 
 	cs.EndDate = endDate
 	cs.Status = "已结束"
+	cs.UpdatedAt = time.Now()
+
+	return s.customerServiceRepo.Update(ctx, cs)
+}
+
+// UpdateCustomerServiceEndDate 修改客户服务结束时间（不改变状态）
+func (s *ServerService) UpdateCustomerServiceEndDate(ctx context.Context, customerServiceID primitive.ObjectID, endDate time.Time) error {
+	cs, err := s.customerServiceRepo.FindById(ctx, customerServiceID)
+	if err != nil {
+		return err
+	}
+	if cs == nil {
+		return errors.New("客户服务记录不存在")
+	}
+
+	cs.EndDate = endDate
+	cs.UpdatedAt = time.Now()
+
+	return s.customerServiceRepo.Update(ctx, cs)
+}
+
+// CancelCustomerService 取消客户单一服务
+func (s *ServerService) CancelCustomerService(ctx context.Context, customerServiceID primitive.ObjectID) error {
+	cs, err := s.customerServiceRepo.FindById(ctx, customerServiceID)
+	if err != nil {
+		return err
+	}
+	if cs == nil {
+		return errors.New("客户服务记录不存在")
+	}
+
+	cs.Status = "已取消"
 	cs.UpdatedAt = time.Now()
 
 	return s.customerServiceRepo.Update(ctx, cs)

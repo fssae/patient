@@ -49,7 +49,7 @@ func (h *BedHandler) DeleteBed(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := primitive.ObjectIDFromHex(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  "无效的ID",
 		})
@@ -58,7 +58,7 @@ func (h *BedHandler) DeleteBed(c *gin.Context) {
 
 	err = h.svc.Delete(c.Request.Context(), id)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  err.Error(),
 		})
@@ -89,7 +89,7 @@ func (h *BedHandler) Create(c *gin.Context) {
 	}
 	err := h.svc.Create(c.Request.Context(), &req)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  err.Error(),
 		})
@@ -120,7 +120,7 @@ func (h *BedHandler) GetById(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := primitive.ObjectIDFromHex(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  "无效的ID",
 		})
@@ -164,7 +164,7 @@ func (h *BedHandler) GetByRoomID(c *gin.Context) {
 	roomIDStr := c.Param("room_id")
 	roomID, err := primitive.ObjectIDFromHex(roomIDStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  "无效的房间ID",
 		})
@@ -244,7 +244,7 @@ func (h *BedHandler) Update(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := primitive.ObjectIDFromHex(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  "无效的床位ID",
 		})
@@ -258,7 +258,7 @@ func (h *BedHandler) Update(c *gin.Context) {
 
 	err = h.svc.Update(c.Request.Context(), id, &req)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  err.Error(),
 		})
@@ -285,7 +285,7 @@ func (h *BedHandler) Release(c *gin.Context) {
 	bedIDStr := c.Param("id")
 	bedID, err := primitive.ObjectIDFromHex(bedIDStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  "无效的床位ID",
 		})
@@ -294,7 +294,7 @@ func (h *BedHandler) Release(c *gin.Context) {
 
 	err = h.svc.Release(c.Request.Context(), bedID)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"code": 400,
 			"msg":  err.Error(),
 		})

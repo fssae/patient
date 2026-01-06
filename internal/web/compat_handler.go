@@ -48,7 +48,7 @@ func (h *CompatHandler) GetPatient(c *gin.Context) {
 	patientID := c.Param("patient_id")
 	id, err := primitive.ObjectIDFromHex(patientID)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"error":   "BAD_REQUEST",
 			"message": "无效的患者ID",
 		})
