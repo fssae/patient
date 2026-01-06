@@ -573,28 +573,30 @@ func (s *RecordService) GetOutgoingList(ctx context.Context, name, startDate, en
 	}
 
 	// 外出时间范围 (StartTime)
-	if startDate != "" || endDate != "" {
-		dateFilter := bson.M{}
+	if startDate != "" {
 		if startDate != "" {
 			if t, err := time.Parse("2006-01-02", startDate); err == nil {
-				dateFilter["$gte"] = t
+				filter["start_time"] = bson.M{"$gte": t}
+			} else {
+				return nil, 0, err
 			}
 		}
-		if endDate != "" {
-			if t, err := time.Parse("2006-01-02", endDate); err == nil {
-				t = t.Add(24 * time.Hour)
-				dateFilter["$lt"] = t
-			}
-		}
-		filter["start_time"] = dateFilter
 	}
-	// 状态筛选
+	// 状态筛选 已外出没有endDate,已返回有endDate
 	if status != "" {
 		switch status {
 		case "已返回":
 			filter["type"] = "入住" // 直接匹配
+			if endDate != "" {
+				if t, err := time.Parse("2006-01-02", endDate); err == nil {
+					filter["end_time"] = bson.M{"$lte": t}
+				} else {
+					return nil, 0, err
+				}
+			}
 		case "已外出":
 			filter["type"] = "外出" // 直接匹配
+			//已外出没有endDate
 		}
 	}
 
@@ -613,14 +615,16 @@ func (s *RecordService) GetOutgoingList(ctx context.Context, name, startDate, en
 			phone = customer.ContactPhone // 使用紧急联系人电话
 		}
 
-		// 除了退住状态的记录都返回
-		currentStatus := "已返回"
+		//退住及入住未外出（没有返回时间）的记录都不要
+		if r.EndTime.IsZero() && r.Type == "入住" {
+			continue
+		}
+
+		var currentStatus string
 		if r.EndTime.IsZero() {
-			//判断type是否是退住
-			if r.Type == "退住" {
-				continue
-			}
 			currentStatus = "已外出"
+		} else {
+			currentStatus = "已返回"
 		}
 
 		item := map[string]interface{}{
