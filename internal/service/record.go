@@ -267,7 +267,6 @@ func (s *RecordService) Return(ctx context.Context, recordsID primitive.ObjectID
 		if records[i].Type == "外出" && records[i].EndTime.IsZero() {
 			records[i].EndTime = time.Now()
 			records[i].Note = note
-			records[i].Type = "入住" // 标记为已返回入住
 			return s.recordRepo.Update(ctx, records[i])
 		}
 	}
@@ -615,9 +614,8 @@ func (s *RecordService) GetOutgoingList(ctx context.Context, name, startDate, en
 			phone = customer.ContactPhone // 使用紧急联系人电话
 		}
 
-		//退住及入住未外出（没有返回时间）的记录都不要
-		if r.EndTime.IsZero() && r.Type == "入住" {
-			total--
+		//退住记录都不要
+		if r.Type == "退住" {
 			continue
 		}
 
