@@ -1,0 +1,39 @@
+# 配置文件示例 - 请复制为 conf.yaml 并填入真实值
+# ⚠️  不要将真实配置提交到Git仓库
+
+mongodb:
+  account: your_mongodb_user
+  password: ${MONGO_PASSWORD}  # 使用环境变量
+  address1: localhost
+  port1: 27017
+
+redis:
+  addr: "localhost:6379"
+  password: ${REDIS_PASSWORD}  # 使用环境变量
+
+minio:
+  address: "localhost"
+  port: "9000"
+  bucket: "patient"
+  access_key: ${MINIO_ACCESS_KEY}  # 使用环境变量
+  secret_key: ${MINIO_SECRET_KEY}  # 使用环境变量
+
+general:
+  password: ${ADMIN_PASSWORD}  # 使用环境变量
+  jwt: ${JWT_SECRET}          # 使用环境变量，至少32字符
+
+kafka:
+  address: "localhost:9092"
+  brokers: ["localhost:9092"]
+  RequestTopic: "face_analyze_request"
+  ResponseTopic: "face_analyze_response"
+  username: ${KAFKA_USERNAME}   # 使用环境变量
+  password: ${KAFKA_PASSWORD}   # 使用环境变量
+  producer:
+    retry_max: 3
+    required_acks: "WaitForAll"
+  consumer:
+    group_session_timeout: 30s
+    heartbeat_interval: 3s
+    auto_offset_reset: "oldest"
+    rebalance_timeout: 60s

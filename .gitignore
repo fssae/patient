@@ -11,10 +11,32 @@ bin/
 *.iml
 
 # 依赖管理
-go.sum
-# 注意：go.mod 必须保留，但 go.sum 有些团队会忽略，建议保留。
-# 如果你想忽略 go.sum，取消下面注释：
+# 注意：go.mod 必须保留，但 go.sum 建议保留以确保依赖版本一致性
 # go.sum
 
 # 日志文件
 *.log
+
+# 配置文件（包含敏感信息）
+config/conf.yaml
+config/conf.*.yaml
+!config/conf.example.yaml
+
+# 环境变量文件
+.env
+.env.*
+!.env.example
+
+# MacOS系统文件
+.DS_Store
+**/.DS_Store
+
+# 测试覆盖率
+coverage.out
+coverage.html
+
+# 临时文件
+*.tmp
+*.swp
+*.swo
+*~
